@@ -203,6 +203,50 @@ export function useMacroTracker() {
     return days;
   };
 
+  const exportData = () => {
+    try {
+      const backupObj = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        goals,
+        meals,
+      };
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(backupObj, null, 2)
+      )}`;
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', jsonString);
+      downloadAnchor.setAttribute(
+        'download',
+        `nutrisnap_backup_${new Date().toISOString().split('T')[0]}.json`
+      );
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (e) {
+      console.error('Export error:', e);
+      alert('Failed to export backup data.');
+    }
+  };
+
+  const importData = (jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (parsed.goals) {
+        updateGoals(parsed.goals);
+      }
+      if (Array.isArray(parsed.meals)) {
+        saveMeals(parsed.meals);
+      }
+      alert('Backup restored successfully!');
+      return true;
+    } catch (e) {
+      console.error('Import error:', e);
+      alert('Invalid backup JSON file format.');
+      return false;
+    }
+  };
+
   return {
     meals,
     filteredMeals,
@@ -215,6 +259,8 @@ export function useMacroTracker() {
     deleteMeal,
     updateGoals,
     get7DayHistory,
+    exportData,
+    importData,
     isLoaded,
   };
 }

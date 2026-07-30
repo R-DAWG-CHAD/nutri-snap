@@ -10,9 +10,19 @@ interface GoalsModalProps {
   goals: DailyGoals;
   onSave: (newGoals: DailyGoals) => void;
   onOpenAIPlan?: () => void;
+  onExport?: () => void;
+  onImport?: (jsonStr: string) => void;
 }
 
-export function GoalsModal({ isOpen, onClose, goals, onSave, onOpenAIPlan }: GoalsModalProps) {
+export function GoalsModal({
+  isOpen,
+  onClose,
+  goals,
+  onSave,
+  onOpenAIPlan,
+  onExport,
+  onImport,
+}: GoalsModalProps) {
   const [calories, setCalories] = useState<number>(goals.calories);
   const [protein, setProtein] = useState<number>(goals.proteinGrams);
   const [carbs, setCarbs] = useState<number>(goals.carbsGrams);
@@ -147,8 +157,49 @@ export function GoalsModal({ isOpen, onClose, goals, onSave, onOpenAIPlan }: Goa
             />
           </div>
 
+          {/* Backup & Restore Data section */}
+          {(onExport || onImport) && (
+            <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
+              <span className="text-[11px] font-semibold text-slate-400">Data Management & Backup</span>
+              <div className="flex items-center gap-2">
+                {onExport && (
+                  <button
+                    type="button"
+                    onClick={onExport}
+                    className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-300 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <span>📥 Export Backup</span>
+                  </button>
+                )}
+
+                {onImport && (
+                  <label className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-300 font-semibold text-xs cursor-pointer text-center flex items-center justify-center gap-1.5">
+                    <span>📤 Restore Backup</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => {
+                            const text = evt.target?.result as string;
+                            if (text) onImport(text);
+                          };
+                          reader.readAsText(file);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-3">
+          <div className="flex items-center gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}

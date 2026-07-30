@@ -26,6 +26,8 @@ export default function DashboardPage() {
     deleteMeal,
     updateGoals,
     get7DayHistory,
+    exportData,
+    importData,
     isLoaded,
   } = useMacroTracker();
 
@@ -178,6 +180,8 @@ export default function DashboardPage() {
         goals={goals}
         onSave={updateGoals}
         onOpenAIPlan={() => setIsAIPlanOpen(true)}
+        onExport={exportData}
+        onImport={importData}
       />
 
       <AIPlanWizardModal
