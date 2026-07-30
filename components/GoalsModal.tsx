@@ -9,9 +9,10 @@ interface GoalsModalProps {
   onClose: () => void;
   goals: DailyGoals;
   onSave: (newGoals: DailyGoals) => void;
+  onOpenAIPlan?: () => void;
 }
 
-export function GoalsModal({ isOpen, onClose, goals, onSave }: GoalsModalProps) {
+export function GoalsModal({ isOpen, onClose, goals, onSave, onOpenAIPlan }: GoalsModalProps) {
   const [calories, setCalories] = useState<number>(goals.calories);
   const [protein, setProtein] = useState<number>(goals.proteinGrams);
   const [carbs, setCarbs] = useState<number>(goals.carbsGrams);
@@ -60,7 +61,28 @@ export function GoalsModal({ isOpen, onClose, goals, onSave }: GoalsModalProps) 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+        {onOpenAIPlan && (
+          <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-cyan-500/15 border border-emerald-500/30 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-100 flex items-center gap-1">
+                <span>Unsure about your macros?</span>
+              </span>
+              <p className="text-[10px] text-slate-400">Let Gemini calculate BMR & optimal targets</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenAIPlan();
+              }}
+              className="px-3 py-1.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold shadow-md hover:bg-emerald-400 transition-all active:scale-95 flex items-center gap-1"
+            >
+              <span>AI Wizard</span>
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-4">
           {/* Calorie Goal */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">

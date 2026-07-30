@@ -8,6 +8,7 @@ import { FoodLogFeed } from '@/components/FoodLogFeed';
 import { WeeklyChart } from '@/components/WeeklyChart';
 import { MealModal } from '@/components/MealModal';
 import { GoalsModal } from '@/components/GoalsModal';
+import { AIPlanWizardModal } from '@/components/AIPlanWizardModal';
 import { useMacroTracker } from '@/hooks/useMacroTracker';
 import { FoodAnalysisResponse, Meal } from '@/types/tracker';
 import { AlertCircle, X } from 'lucide-react';
@@ -30,6 +31,7 @@ export default function DashboardPage() {
 
   // Modals state
   const [isGoalsOpen, setIsGoalsOpen] = useState(false);
+  const [isAIPlanOpen, setIsAIPlanOpen] = useState(false);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [pendingAnalysis, setPendingAnalysis] = useState<
@@ -113,6 +115,7 @@ export default function DashboardPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         onOpenGoals={() => setIsGoalsOpen(true)}
+        onOpenAIPlan={() => setIsAIPlanOpen(true)}
       />
 
       {/* Error Banner */}
@@ -174,6 +177,13 @@ export default function DashboardPage() {
         onClose={() => setIsGoalsOpen(false)}
         goals={goals}
         onSave={updateGoals}
+        onOpenAIPlan={() => setIsAIPlanOpen(true)}
+      />
+
+      <AIPlanWizardModal
+        isOpen={isAIPlanOpen}
+        onClose={() => setIsAIPlanOpen(false)}
+        onApplyPlan={updateGoals}
       />
     </div>
   );

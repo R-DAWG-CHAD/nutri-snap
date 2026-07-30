@@ -7,9 +7,10 @@ interface NavbarProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   onOpenGoals: () => void;
+  onOpenAIPlan: () => void;
 }
 
-export function Navbar({ selectedDate, onDateChange, onOpenGoals }: NavbarProps) {
+export function Navbar({ selectedDate, onDateChange, onOpenGoals, onOpenAIPlan }: NavbarProps) {
   const dateObj = new Date(selectedDate + 'T00:00:00');
   const todayStr = new Date().toISOString().split('T')[0];
   const isToday = selectedDate === todayStr;
@@ -79,15 +80,26 @@ export function Navbar({ selectedDate, onDateChange, onOpenGoals }: NavbarProps)
           </button>
         </div>
 
-        {/* Settings button */}
-        <button
-          onClick={onOpenGoals}
-          className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/10"
-          title="Target Goals Settings"
-          aria-label="Target Goals Settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        {/* Action controls */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onOpenAIPlan}
+            className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 rounded-xl border border-emerald-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+            title="AI Macro Plan Calculator"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">AI Plan</span>
+          </button>
+
+          <button
+            onClick={onOpenGoals}
+            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/10"
+            title="Target Goals Settings"
+            aria-label="Target Goals Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </header>
   );
