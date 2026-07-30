@@ -11,111 +11,186 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let base64Image = '';
-    let mimeType = 'image/jpeg';
-
     const contentType = req.headers.get('content-type') || '';
-
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get('image') as File | null;
-      if (!file) {
-        return NextResponse.json({ error: 'No image file provided in form data' }, { status: 400 });
-      }
-      mimeType = file.type || 'image/jpeg';
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      base64Image = buffer.toString('base64');
-    } else if (contentType.includes('application/json')) {
-      const body = await req.json();
-      if (!body.image) {
-        return NextResponse.json({ error: 'No base64 image provided in JSON body' }, { status: 400 });
-      }
-      
-      // Parse base64 header if present (data:image/png;base64,...)
-      const match = body.image.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-      if (match) {
-        mimeType = match[1];
-        base64Image = match[2];
-      } else {
-        base64Image = body.image;
-      }
-    } else {
-      return NextResponse.json(
-        { error: 'Unsupported Content-Type. Send multipart/form-data or application/json.' },
-        { status: 400 }
-      );
-    }
-
     const ai = new GoogleGenAI({ apiKey });
 
-    const systemPrompt = `You are an expert nutritional analyst and registered dietitian AI.
-Analyze the provided food/dish image with high precision.
-Estimate realistic portion size in grams, total calories (kcal), and macronutrients in grams (protein, carbohydrates, fats).
+    // Handle Natural Language Text Description
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+
+      if (body.textDescription) {
+        const textPrompt = `You are an expert nutritional analyst and registered dietitian AI.
+Analyze the following text description of a meal: "${body.textDescription}"
+Estimate realistic serving size in grams, total calories (kcal), and macronutrients in grams (protein, carbohydrates, fats).
+
 You MUST respond ONLY with a raw, valid JSON object matching this exact schema:
 {
-  "mealName": "Specific name of dish or food item",
+  "mealName": "Specific clean title of the food item",
+  "estimatedWeightGrams": 250,
+  "calories": 450,
+  "proteinGrams": 32,
+  "carbsGrams": 40,
+  "fatGrams": 15,
+  "confidenceScore": 0.95
+}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
+          config: { responseMimeType: 'application/json' },
+        });
+
+        const responseText = response.text || '';
+        const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanedText);
+
+        return NextResponse.json({
+          mealName: String(parsed.mealName || body.textDescription),
+          estimatedWeightGrams: Math.round(Number(parsed.estimatedWeightGrams) || 200),
+          calories: Math.round(Number(parsed.calories) || 350),
+          proteinGrams: Math.round(Number(parsed.proteinGrams) || 20),
+          carbsGrams: Math.round(Number(parsed.carbsGrams) || 30),
+          fatGrams: Math.round(Number(parsed.fatGrams) || 12),
+          confidenceScore: Math.min(1, Math.max(0, Number(parsed.confidenceScore) || 0.9)),
+        });
+      }
+
+      // Base64 image in JSON
+      if (body.image) {
+        let mimeType = 'image/jpeg';
+        let base64Image = body.image;
+        const match = body.image.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (match) {
+          mimeType = match[1];
+          base64Image = match[2];
+        }
+
+        const visionPrompt = `You are an expert nutritional analyst AI.
+Analyze the provided food/dish image with high precision.
+Estimate realistic portion size in grams, total calories (kcal), and macronutrients in grams (protein, carbohydrates, fats).
+Respond ONLY with raw JSON schema:
+{
+  "mealName": "Specific name of dish",
   "estimatedWeightGrams": 250,
   "calories": 450,
   "proteinGrams": 32,
   "carbsGrams": 40,
   "fatGrams": 15,
   "confidenceScore": 0.92
-}
+}`;
 
-Rules:
-- "confidenceScore" must be a float between 0.00 and 1.00 indicating your visual identification certainty.
-- If multiple items are on the plate, calculate the total cumulative nutrition.
-- Ensure calories roughly equal (protein * 4) + (carbs * 4) + (fat * 9).
-- Return strictly JSON without markdown syntax wrappers, backticks, or extra commentary.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: systemPrompt },
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: [
             {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Image,
-              },
+              role: 'user',
+              parts: [
+                { text: visionPrompt },
+                { inlineData: { mimeType, data: base64Image } },
+              ],
             },
           ],
-        },
-      ],
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+          config: { responseMimeType: 'application/json' },
+        });
 
-    const responseText = response.text || '';
-    
-    // Clean potential markdown blocks if present
-    const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    
-    const parsedData = JSON.parse(cleanedText);
+        const responseText = response.text || '';
+        const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsedData = JSON.parse(cleanedText);
 
-    // Validate expected numerical schema fields
-    const result = {
-      mealName: String(parsedData.mealName || 'Unidentified Dish'),
-      estimatedWeightGrams: Math.round(Number(parsedData.estimatedWeightGrams) || 200),
-      calories: Math.round(Number(parsedData.calories) || 350),
-      proteinGrams: Math.round(Number(parsedData.proteinGrams) || 20),
-      carbsGrams: Math.round(Number(parsedData.carbsGrams) || 30),
-      fatGrams: Math.round(Number(parsedData.fatGrams) || 12),
-      confidenceScore: Math.min(1, Math.max(0, Number(parsedData.confidenceScore) || 0.85)),
-    };
+        return NextResponse.json({
+          mealName: String(parsedData.mealName || 'Unidentified Dish'),
+          estimatedWeightGrams: Math.round(Number(parsedData.estimatedWeightGrams) || 200),
+          calories: Math.round(Number(parsedData.calories) || 350),
+          proteinGrams: Math.round(Number(parsedData.proteinGrams) || 20),
+          carbsGrams: Math.round(Number(parsedData.carbsGrams) || 30),
+          fatGrams: Math.round(Number(parsedData.fatGrams) || 12),
+          confidenceScore: Math.min(1, Math.max(0, Number(parsedData.confidenceScore) || 0.85)),
+        });
+      }
+    }
 
-    return NextResponse.json(result);
+    // Handle Multipart Form Data (Image file)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const file = formData.get('image') as File | null;
+      const textDesc = formData.get('textDescription') as string | null;
+
+      if (textDesc) {
+        const textPrompt = `Analyze meal text: "${textDesc}". Return JSON matching schema:
+{
+  "mealName": "Specific clean title",
+  "estimatedWeightGrams": 250,
+  "calories": 450,
+  "proteinGrams": 32,
+  "carbsGrams": 40,
+  "fatGrams": 15,
+  "confidenceScore": 0.95
+}`;
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
+          config: { responseMimeType: 'application/json' },
+        });
+        const parsed = JSON.parse(response.text?.replace(/```json/gi, '').replace(/```/g, '').trim() || '{}');
+        return NextResponse.json({
+          mealName: String(parsed.mealName || textDesc),
+          estimatedWeightGrams: Math.round(Number(parsed.estimatedWeightGrams) || 200),
+          calories: Math.round(Number(parsed.calories) || 350),
+          proteinGrams: Math.round(Number(parsed.proteinGrams) || 20),
+          carbsGrams: Math.round(Number(parsed.carbsGrams) || 30),
+          fatGrams: Math.round(Number(parsed.fatGrams) || 12),
+          confidenceScore: Math.min(1, Math.max(0, Number(parsed.confidenceScore) || 0.9)),
+        });
+      }
+
+      if (file) {
+        const mimeType = file.type || 'image/jpeg';
+        const arrayBuffer = await file.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+
+        const visionPrompt = `Analyze food image. Respond ONLY with raw JSON schema:
+{
+  "mealName": "Specific name",
+  "estimatedWeightGrams": 250,
+  "calories": 450,
+  "proteinGrams": 32,
+  "carbsGrams": 40,
+  "fatGrams": 15,
+  "confidenceScore": 0.92
+}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: visionPrompt },
+                { inlineData: { mimeType, data: base64Image } },
+              ],
+            },
+          ],
+          config: { responseMimeType: 'application/json' },
+        });
+
+        const parsedData = JSON.parse(response.text?.replace(/```json/gi, '').replace(/```/g, '').trim() || '{}');
+        return NextResponse.json({
+          mealName: String(parsedData.mealName || 'Unidentified Dish'),
+          estimatedWeightGrams: Math.round(Number(parsedData.estimatedWeightGrams) || 200),
+          calories: Math.round(Number(parsedData.calories) || 350),
+          proteinGrams: Math.round(Number(parsedData.proteinGrams) || 20),
+          carbsGrams: Math.round(Number(parsedData.carbsGrams) || 30),
+          fatGrams: Math.round(Number(parsedData.fatGrams) || 12),
+          confidenceScore: Math.min(1, Math.max(0, Number(parsedData.confidenceScore) || 0.85)),
+        });
+      }
+    }
+
+    return NextResponse.json({ error: 'Please provide an image or text description.' }, { status: 400 });
   } catch (error: any) {
     console.error('Gemini Food Analysis Error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to analyze food image with Gemini AI.', 
-        details: error?.message || String(error) 
-      },
+      { error: 'Failed to analyze meal with Gemini AI.', details: error?.message || String(error) },
       { status: 500 }
     );
   }

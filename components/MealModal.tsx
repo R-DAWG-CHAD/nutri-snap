@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Sparkles, Scale, Flame, Dumbbell, Wheat, Beef } from 'lucide-react';
+import { X, Check, Sparkles, Scale, Flame, Dumbbell, Wheat, Beef, MessageSquareText, Loader2 } from 'lucide-react';
 import { FoodAnalysisResponse, Meal } from '@/types/tracker';
 
 interface MealModalProps {
@@ -29,6 +29,11 @@ export function MealModal({
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
+  // Natural Language Description State
+  const [textDescription, setTextDescription] = useState('');
+  const [isEstimatingText, setIsEstimatingText] = useState(false);
+  const [estimatorError, setEstimatorError] = useState<string | null>(null);
+
   useEffect(() => {
     if (initialData) {
       setMealName(initialData.mealName || '');
@@ -40,10 +45,43 @@ export function MealModal({
       setConfidence(initialData.confidenceScore || 0.9);
       setImageUrl(initialData.imageUrl);
       setMealType(initialData.mealType || 'lunch');
+      setTextDescription('');
     }
   }, [initialData]);
 
   if (!isOpen) return null;
+
+  const handleTextEstimate = async () => {
+    if (!textDescription.trim()) return;
+    try {
+      setIsEstimatingText(true);
+      setEstimatorError(null);
+
+      const response = await fetch('/api/analyze-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ textDescription }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to estimate nutrition from text.');
+      }
+
+      setMealName(data.mealName || textDescription);
+      setWeight(data.estimatedWeightGrams || 200);
+      setCalories(data.calories || 0);
+      setProtein(data.proteinGrams || 0);
+      setCarbs(data.carbsGrams || 0);
+      setFat(data.fatGrams || 0);
+      setConfidence(data.confidenceScore || 0.95);
+    } catch (err: any) {
+      console.error(err);
+      setEstimatorError(err.message || 'Error estimating nutrition');
+    } finally {
+      setIsEstimatingText(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,10 +110,10 @@ export function MealModal({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">
-                {isEditingExisting ? 'Edit Meal Entry' : 'Verify AI Detection'}
+                {isEditingExisting ? 'Edit Meal Entry' : 'Log Meal Entry'}
               </h2>
               <p className="text-[11px] text-slate-400">
-                Review or modify values before saving to your daily log
+                Use AI text estimation or fine-tune exact nutrition numbers
               </p>
             </div>
           </div>
@@ -88,10 +126,54 @@ export function MealModal({
           </button>
         </div>
 
+        {/* AI Text Description Estimator Box */}
+        <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-950 border border-emerald-500/30 flex flex-col gap-2.5 shadow-inner">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+              <MessageSquareText className="w-4 h-4" />
+              <span>Describe What You Ate (AI Auto-Estimate)</span>
+            </span>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={textDescription}
+              onChange={(e) => setTextDescription(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleTextEstimate();
+                }
+              }}
+              placeholder="e.g. 2 eggs, 2 slices whole wheat toast & coffee"
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
+            />
+
+            <button
+              type="button"
+              disabled={isEstimatingText || !textDescription.trim()}
+              onClick={handleTextEstimate}
+              className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 flex-shrink-0"
+            >
+              {isEstimatingText ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 stroke-[2.5]" />
+              )}
+              <span>Estimate</span>
+            </button>
+          </div>
+
+          {estimatorError && (
+            <span className="text-[11px] text-red-400 font-medium">{estimatorError}</span>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           {/* Image & Confidence Badge */}
           {imageUrl && (
-            <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-white/10 group shadow-inner">
+            <div className="relative w-full h-36 rounded-2xl overflow-hidden border border-white/10 shadow-inner">
               <img
                 src={imageUrl}
                 alt={mealName}
@@ -117,7 +199,7 @@ export function MealModal({
               required
               value={mealName}
               onChange={(e) => setMealName(e.target.value)}
-              placeholder="e.g. Grilled Salmon Salad"
+              placeholder="e.g. Scrambled Eggs & Toast"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
             />
           </div>

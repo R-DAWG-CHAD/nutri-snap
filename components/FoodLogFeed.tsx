@@ -36,13 +36,15 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
           </div>
         </div>
 
-        <button
-          onClick={onAddManual}
-          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 text-xs font-semibold flex items-center gap-1.5 transition-all hover:border-emerald-500/40"
-        >
-          <Plus className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Manual Entry</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onAddManual}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5 text-emerald-400" />
+            <span>AI Text / Manual</span>
+          </button>
+        </div>
       </div>
 
       {meals.length === 0 ? (
