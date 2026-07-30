@@ -1,0 +1,149 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { X, Check, Settings, Flame, Dumbbell, Wheat, Beef } from 'lucide-react';
+import { DailyGoals } from '@/types/tracker';
+
+interface GoalsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  goals: DailyGoals;
+  onSave: (newGoals: DailyGoals) => void;
+}
+
+export function GoalsModal({ isOpen, onClose, goals, onSave }: GoalsModalProps) {
+  const [calories, setCalories] = useState<number>(goals.calories);
+  const [protein, setProtein] = useState<number>(goals.proteinGrams);
+  const [carbs, setCarbs] = useState<number>(goals.carbsGrams);
+  const [fat, setFat] = useState<number>(goals.fatGrams);
+
+  useEffect(() => {
+    setCalories(goals.calories);
+    setProtein(goals.proteinGrams);
+    setCarbs(goals.carbsGrams);
+    setFat(goals.fatGrams);
+  }, [goals]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      calories: Number(calories) || 2000,
+      proteinGrams: Number(protein) || 150,
+      carbsGrams: Number(carbs) || 200,
+      fatGrams: Number(fat) || 65,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="w-full max-w-sm glass-modal rounded-3xl border border-white/10 p-6 shadow-2xl relative my-auto animate-in fade-in zoom-in duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+              <Settings className="w-4 h-4 text-violet-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Daily Target Goals</h2>
+              <p className="text-[11px] text-slate-400">Customize your target nutrition budget</p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+          {/* Calorie Goal */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-violet-400" />
+              <span>Daily Calorie Target (kcal)</span>
+            </label>
+            <input
+              type="number"
+              min="500"
+              max="10000"
+              value={calories}
+              onChange={(e) => setCalories(Number(e.target.value))}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-base focus:outline-none focus:border-violet-500"
+            />
+          </div>
+
+          {/* Protein Goal */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+              <Dumbbell className="w-4 h-4 text-emerald-400" />
+              <span>Protein Goal (grams)</span>
+            </label>
+            <input
+              type="number"
+              min="10"
+              max="500"
+              value={protein}
+              onChange={(e) => setProtein(Number(e.target.value))}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-emerald-300 font-bold text-base focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          {/* Carbs Goal */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+              <Wheat className="w-4 h-4 text-cyan-400" />
+              <span>Carbohydrates Goal (grams)</span>
+            </label>
+            <input
+              type="number"
+              min="10"
+              max="1000"
+              value={carbs}
+              onChange={(e) => setCarbs(Number(e.target.value))}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-cyan-300 font-bold text-base focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          {/* Fat Goal */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+              <Beef className="w-4 h-4 text-amber-400" />
+              <span>Fats Goal (grams)</span>
+            </label>
+            <input
+              type="number"
+              min="5"
+              max="500"
+              value={fat}
+              onChange={(e) => setFat(Number(e.target.value))}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-amber-300 font-bold text-base focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+            >
+              <Check className="w-4 h-4 stroke-[3]" />
+              <span>Save Goals</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
