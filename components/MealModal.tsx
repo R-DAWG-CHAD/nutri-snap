@@ -20,11 +20,11 @@ export function MealModal({
   isEditingExisting = false,
 }: MealModalProps) {
   const [mealName, setMealName] = useState('');
-  const [weight, setWeight] = useState<number>(200);
-  const [calories, setCalories] = useState<number>(350);
-  const [protein, setProtein] = useState<number>(20);
-  const [carbs, setCarbs] = useState<number>(30);
-  const [fat, setFat] = useState<number>(12);
+  const [weight, setWeight] = useState<number | ''>(200);
+  const [calories, setCalories] = useState<number | ''>(350);
+  const [protein, setProtein] = useState<number | ''>(20);
+  const [carbs, setCarbs] = useState<number | ''>(30);
+  const [fat, setFat] = useState<number | ''>(12);
   const [confidence, setConfidence] = useState<number>(0.9);
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
@@ -37,12 +37,12 @@ export function MealModal({
   useEffect(() => {
     if (initialData) {
       setMealName(initialData.mealName || '');
-      setWeight(initialData.estimatedWeightGrams || 200);
-      setCalories(initialData.calories || 0);
-      setProtein(initialData.proteinGrams || 0);
-      setCarbs(initialData.carbsGrams || 0);
-      setFat(initialData.fatGrams || 0);
-      setConfidence(initialData.confidenceScore || 0.9);
+      setWeight(initialData.estimatedWeightGrams ?? 200);
+      setCalories(initialData.calories ?? 0);
+      setProtein(initialData.proteinGrams ?? 0);
+      setCarbs(initialData.carbsGrams ?? 0);
+      setFat(initialData.fatGrams ?? 0);
+      setConfidence(initialData.confidenceScore ?? 0.9);
       setImageUrl(initialData.imageUrl);
       setMealType(initialData.mealType || 'lunch');
       setTextDescription('');
@@ -69,12 +69,12 @@ export function MealModal({
       }
 
       setMealName(data.mealName || textDescription);
-      setWeight(data.estimatedWeightGrams || 200);
-      setCalories(data.calories || 0);
-      setProtein(data.proteinGrams || 0);
-      setCarbs(data.carbsGrams || 0);
-      setFat(data.fatGrams || 0);
-      setConfidence(data.confidenceScore || 0.95);
+      setWeight(data.estimatedWeightGrams ?? 200);
+      setCalories(data.calories ?? 0);
+      setProtein(data.proteinGrams ?? 0);
+      setCarbs(data.carbsGrams ?? 0);
+      setFat(data.fatGrams ?? 0);
+      setConfidence(data.confidenceScore ?? 0.95);
     } catch (err: any) {
       console.error(err);
       setEstimatorError(err.message || 'Error estimating nutrition');
@@ -87,11 +87,11 @@ export function MealModal({
     e.preventDefault();
     onSave({
       mealName: mealName || 'Custom Meal',
-      estimatedWeightGrams: Number(weight),
-      calories: Number(calories),
-      proteinGrams: Number(protein),
-      carbsGrams: Number(carbs),
-      fatGrams: Number(fat),
+      estimatedWeightGrams: weight === '' ? 0 : Number(weight),
+      calories: calories === '' ? 0 : Number(calories),
+      proteinGrams: protein === '' ? 0 : Number(protein),
+      carbsGrams: carbs === '' ? 0 : Number(carbs),
+      fatGrams: fat === '' ? 0 : Number(fat),
       confidenceScore: confidence,
       mealType,
       imageUrl,
@@ -236,9 +236,9 @@ export function MealModal({
               </label>
               <input
                 type="number"
-                min="1"
+                min="0"
                 value={weight}
-                onChange={(e) => setWeight(Number(e.target.value))}
+                onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -252,7 +252,7 @@ export function MealModal({
                 type="number"
                 min="0"
                 value={calories}
-                onChange={(e) => setCalories(Number(e.target.value))}
+                onChange={(e) => setCalories(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-sm focus:outline-none focus:border-violet-500"
               />
             </div>
@@ -270,7 +270,7 @@ export function MealModal({
                 type="number"
                 min="0"
                 value={protein}
-                onChange={(e) => setProtein(Number(e.target.value))}
+                onChange={(e) => setProtein(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -285,7 +285,7 @@ export function MealModal({
                 type="number"
                 min="0"
                 value={carbs}
-                onChange={(e) => setCarbs(Number(e.target.value))}
+                onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-cyan-400"
               />
             </div>
@@ -300,7 +300,7 @@ export function MealModal({
                 type="number"
                 min="0"
                 value={fat}
-                onChange={(e) => setFat(Number(e.target.value))}
+                onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-amber-400"
               />
             </div>

@@ -23,10 +23,10 @@ export function GoalsModal({
   onExport,
   onImport,
 }: GoalsModalProps) {
-  const [calories, setCalories] = useState<number>(goals.calories);
-  const [protein, setProtein] = useState<number>(goals.proteinGrams);
-  const [carbs, setCarbs] = useState<number>(goals.carbsGrams);
-  const [fat, setFat] = useState<number>(goals.fatGrams);
+  const [calories, setCalories] = useState<number | ''>(goals.calories);
+  const [protein, setProtein] = useState<number | ''>(goals.proteinGrams);
+  const [carbs, setCarbs] = useState<number | ''>(goals.carbsGrams);
+  const [fat, setFat] = useState<number | ''>(goals.fatGrams);
 
   useEffect(() => {
     setCalories(goals.calories);
@@ -40,10 +40,10 @@ export function GoalsModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
-      calories: Number(calories) || 2000,
-      proteinGrams: Number(protein) || 150,
-      carbsGrams: Number(carbs) || 200,
-      fatGrams: Number(fat) || 65,
+      calories: calories === '' ? 2000 : Number(calories),
+      proteinGrams: protein === '' ? 150 : Number(protein),
+      carbsGrams: carbs === '' ? 200 : Number(carbs),
+      fatGrams: fat === '' ? 65 : Number(fat),
     });
     onClose();
   };
@@ -104,7 +104,7 @@ export function GoalsModal({
               min="500"
               max="10000"
               value={calories}
-              onChange={(e) => setCalories(Number(e.target.value))}
+              onChange={(e) => setCalories(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-base focus:outline-none focus:border-violet-500"
             />
           </div>
@@ -120,7 +120,7 @@ export function GoalsModal({
               min="10"
               max="500"
               value={protein}
-              onChange={(e) => setProtein(Number(e.target.value))}
+              onChange={(e) => setProtein(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-emerald-300 font-bold text-base focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -136,7 +136,7 @@ export function GoalsModal({
               min="10"
               max="1000"
               value={carbs}
-              onChange={(e) => setCarbs(Number(e.target.value))}
+              onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-cyan-300 font-bold text-base focus:outline-none focus:border-cyan-500"
             />
           </div>
@@ -152,7 +152,7 @@ export function GoalsModal({
               min="5"
               max="500"
               value={fat}
-              onChange={(e) => setFat(Number(e.target.value))}
+              onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-amber-300 font-bold text-base focus:outline-none focus:border-amber-500"
             />
           </div>

@@ -31,19 +31,19 @@ export function AIPlanWizardModal({
   onApplyPlan,
 }: AIPlanWizardModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
+  const [unit, setUnit] = useState<'metric' | 'imperial'>('imperial');
 
-  // Form Inputs
-  const [age, setAge] = useState<number>(28);
+  // Form Inputs (using string inputs for smooth typing without forced zero or rounding artifacts)
+  const [ageInput, setAgeInput] = useState<string>('28');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
-  const [weightKg, setWeightKg] = useState<number>(82);
-  const [heightCm, setHeightCm] = useState<number>(178);
+  const [weightInput, setWeightInput] = useState<string>('180'); // 180 lbs or 82 kg depending on unit
+  const [heightInput, setHeightInput] = useState<string>('70'); // 70 inches or 178 cm
 
   // Goal & Pace Inputs
   const [fitnessGoal, setFitnessGoal] = useState<
     'fat_loss' | 'maintenance' | 'muscle_gain' | 'recomp'
   >('fat_loss');
-  const [goalWeightKg, setGoalWeightKg] = useState<number>(74);
+  const [goalWeightInput, setGoalWeightInput] = useState<string>('165'); // Goal weight in active unit
   const [weeklyPaceKg, setWeeklyPaceKg] = useState<number>(0.5); // 0.25 to 1.0 kg/wk
   const [activityLevel, setActivityLevel] = useState<
     'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
@@ -71,9 +71,18 @@ export function AIPlanWizardModal({
 
   if (!isOpen) return null;
 
+  // Conversion helpers
+  const currentWeightNum = Number(weightInput) || 75;
+  const goalWeightNum = Number(goalWeightInput) || 70;
+
+  // Convert to kg for API and calculations regardless of active unit
+  const currentWeightKg = unit === 'imperial' ? currentWeightNum / 2.20462 : currentWeightNum;
+  const goalWeightKg = unit === 'imperial' ? goalWeightNum / 2.20462 : goalWeightNum;
+  const heightCm = unit === 'imperial' ? (Number(heightInput) || 68) * 2.54 : (Number(heightInput) || 175);
+
   // Real-time fat loss projection math
-  const weightDiff = Math.max(0, weightKg - goalWeightKg);
-  const estimatedWeeks = weeklyPaceKg > 0 ? Math.ceil(weightDiff / weeklyPaceKg) : 0;
+  const weightDiffKg = Math.max(0, currentWeightKg - goalWeightKg);
+  const estimatedWeeks = weeklyPaceKg > 0 ? Math.ceil(weightDiffKg / weeklyPaceKg) : 0;
   const projectedDate = new Date();
   projectedDate.setDate(projectedDate.getDate() + estimatedWeeks * 7);
   const formattedProjectedDate = projectedDate.toLocaleDateString('en-US', {
@@ -83,6 +92,22 @@ export function AIPlanWizardModal({
   });
   const dailyDeficitKcal = Math.round((weeklyPaceKg * 7700) / 7);
 
+  const handleUnitToggle = (newUnit: 'metric' | 'imperial') => {
+    if (newUnit === unit) return;
+    if (newUnit === 'imperial') {
+      // Metric -> Imperial
+      setWeightInput(String(Math.round(currentWeightNum * 2.20462)));
+      setGoalWeightInput(String(Math.round(goalWeightNum * 2.20462)));
+      setHeightInput(String(Math.round((Number(heightInput) || 175) / 2.54)));
+    } else {
+      // Imperial -> Metric
+      setWeightInput(String(Math.round(currentWeightNum / 2.20462)));
+      setGoalWeightInput(String(Math.round(goalWeightNum / 2.20462)));
+      setHeightInput(String(Math.round((Number(heightInput) || 70) * 2.54)));
+    }
+    setUnit(newUnit);
+  };
+
   const handleGenerateAIPlan = async () => {
     try {
       setIsGenerating(true);
@@ -90,13 +115,13 @@ export function AIPlanWizardModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          age,
+          age: Number(ageInput) || 28,
           gender,
-          weightKg,
-          heightCm,
+          weightKg: Math.round(currentWeightKg),
+          heightCm: Math.round(heightCm),
           activityLevel,
           fitnessGoal,
-          goalWeightKg: fitnessGoal === 'fat_loss' ? goalWeightKg : undefined,
+          goalWeightKg: fitnessGoal === 'fat_loss' ? Math.round(goalWeightKg) : undefined,
           weeklyPaceKg: fitnessGoal === 'fat_loss' ? weeklyPaceKg : undefined,
           dietPreference,
         }),
@@ -161,21 +186,21 @@ export function AIPlanWizardModal({
               <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-white/10 text-[11px]">
                 <button
                   type="button"
-                  onClick={() => setUnit('metric')}
-                  className={`px-2.5 py-0.5 rounded font-semibold transition-all ${
-                    unit === 'metric' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
-                  }`}
-                >
-                  Metric (kg/cm)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUnit('imperial')}
+                  onClick={() => handleUnitToggle('imperial')}
                   className={`px-2.5 py-0.5 rounded font-semibold transition-all ${
                     unit === 'imperial' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
                   }`}
                 >
                   Imperial (lbs/in)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUnitToggle('metric')}
+                  className={`px-2.5 py-0.5 rounded font-semibold transition-all ${
+                    unit === 'metric' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
+                  }`}
+                >
+                  Metric (kg/cm)
                 </button>
               </div>
             </div>
@@ -209,8 +234,8 @@ export function AIPlanWizardModal({
                   type="number"
                   min="14"
                   max="100"
-                  value={age}
-                  onChange={(e) => setAge(Number(e.target.value))}
+                  value={ageInput}
+                  onChange={(e) => setAgeInput(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-white font-bold text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -221,10 +246,9 @@ export function AIPlanWizardModal({
                 </label>
                 <input
                   type="number"
-                  min="100"
-                  max="250"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(Number(e.target.value))}
+                  min="1"
+                  value={heightInput}
+                  onChange={(e) => setHeightInput(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-white font-bold text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -237,13 +261,10 @@ export function AIPlanWizardModal({
               </label>
               <input
                 type="number"
-                min="30"
-                max="300"
-                value={unit === 'metric' ? weightKg : Math.round(weightKg * 2.20462)}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setWeightKg(unit === 'metric' ? val : Math.round(val / 2.20462));
-                }}
+                min="1"
+                value={weightInput}
+                onChange={(e) => setWeightInput(e.target.value)}
+                placeholder={unit === 'metric' ? 'e.g. 80' : 'e.g. 180'}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-emerald-300 font-bold text-base focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -302,23 +323,26 @@ export function AIPlanWizardModal({
                 {/* Target Goal Weight */}
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                    <span>Target Goal Weight</span>
-                    <span className="text-emerald-400 font-bold">
-                      {goalWeightKg} kg ({Math.round(goalWeightKg * 2.20462)} lbs)
-                    </span>
+                    <span>Target Goal Weight ({unit === 'metric' ? 'kg' : 'lbs'})</span>
+                    <input
+                      type="number"
+                      value={goalWeightInput}
+                      onChange={(e) => setGoalWeightInput(e.target.value)}
+                      className="w-24 px-2 py-0.5 rounded-lg bg-slate-950 border border-emerald-500/40 text-emerald-400 font-bold text-xs text-right focus:outline-none"
+                    />
                   </div>
                   <input
                     type="range"
-                    min={Math.max(40, weightKg - 35)}
-                    max={weightKg - 1}
-                    step="0.5"
-                    value={goalWeightKg}
-                    onChange={(e) => setGoalWeightKg(Number(e.target.value))}
+                    min={unit === 'metric' ? 35 : 75}
+                    max={currentWeightNum - 1}
+                    step="1"
+                    value={goalWeightNum}
+                    onChange={(e) => setGoalWeightInput(e.target.value)}
                     className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-950 rounded-lg"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-0.5">
-                    <span>Desired Loss: {(weightKg - goalWeightKg).toFixed(1)} kg</span>
-                    <span>Current: {weightKg} kg</span>
+                    <span>Desired Loss: {(currentWeightNum - goalWeightNum).toFixed(1)} {unit === 'metric' ? 'kg' : 'lbs'}</span>
+                    <span>Current: {currentWeightNum} {unit === 'metric' ? 'kg' : 'lbs'}</span>
                   </div>
                 </div>
 

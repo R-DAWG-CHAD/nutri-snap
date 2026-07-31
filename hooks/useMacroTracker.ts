@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Meal, DailyGoals } from '@/types/tracker';
 
+// Local timezone date string helper (YYYY-MM-DD)
+export function getLocalDateString(dateInput: Date | string = new Date()): string {
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const DEFAULT_GOALS: DailyGoals = {
   calories: 2000,
   proteinGrams: 150,
@@ -50,27 +59,12 @@ const SAMPLE_MEALS: Meal[] = [
     mealType: 'dinner',
     imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80',
   },
-  {
-    id: 'sample-4',
-    mealName: 'Protein Shake & Banana',
-    estimatedWeightGrams: 350,
-    calories: 320,
-    proteinGrams: 30,
-    carbsGrams: 38,
-    fatGrams: 5,
-    confidenceScore: 0.90,
-    timestamp: new Date(Date.now() - 52 * 3600 * 1000).toISOString(),
-    mealType: 'snack',
-    imageUrl: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=400&q=80',
-  },
 ];
 
 export function useMacroTracker() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [goals, setGoals] = useState<DailyGoals>(DEFAULT_GOALS);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load state from LocalStorage on mount
@@ -86,7 +80,6 @@ export function useMacroTracker() {
         const parsed = JSON.parse(savedMeals);
         setMeals(parsed.length > 0 ? parsed : SAMPLE_MEALS);
       } else {
-        // Seed with sample data on first run
         setMeals(SAMPLE_MEALS);
         localStorage.setItem('nutrisnap_meals', JSON.stringify(SAMPLE_MEALS));
       }
@@ -98,7 +91,6 @@ export function useMacroTracker() {
     }
   }, []);
 
-  // Save meals to LocalStorage
   const saveMeals = (newMeals: Meal[]) => {
     setMeals(newMeals);
     try {
@@ -108,7 +100,6 @@ export function useMacroTracker() {
     }
   };
 
-  // Save goals to LocalStorage
   const updateGoals = (newGoals: DailyGoals) => {
     setGoals(newGoals);
     try {
@@ -118,11 +109,25 @@ export function useMacroTracker() {
     }
   };
 
-  const addMeal = (mealData: Omit<Meal, 'id' | 'timestamp'>) => {
+  const addMeal = (mealData: Omit<Meal, 'id' | 'timestamp'>, customDate?: string) => {
+    const targetDateStr = customDate || selectedDate;
+    const now = new Date();
+    
+    // Construct Date object in local time for target date
+    const [year, month, day] = targetDateStr.split('-').map(Number);
+    const mealTimestampDate = new Date(
+      year,
+      month - 1,
+      day,
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds()
+    );
+
     const newMeal: Meal = {
       ...mealData,
       id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-      timestamp: new Date().toISOString(),
+      timestamp: mealTimestampDate.toISOString(),
     };
     const updated = [newMeal, ...meals];
     saveMeals(updated);
@@ -139,13 +144,12 @@ export function useMacroTracker() {
     saveMeals(updated);
   };
 
-  // Filter meals for the selected date
+  // Filter meals for the selected date using local timezone date string
   const filteredMeals = meals.filter((meal) => {
-    const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
+    const mealDate = getLocalDateString(new Date(meal.timestamp));
     return mealDate === selectedDate;
   });
 
-  // Calculate daily totals for selected date
   const todaySummary = filteredMeals.reduce(
     (acc, meal) => ({
       calories: acc.calories + (meal.calories || 0),
@@ -168,14 +172,16 @@ export function useMacroTracker() {
       calorieGoal: number;
     }> = [];
 
+    const todayStr = getLocalDateString(new Date());
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const isoDate = d.toISOString().split('T')[0];
-      const dayName = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+      const isoDate = getLocalDateString(d);
+      const dayName = isoDate === todayStr ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
 
       const dayMeals = meals.filter(
-        (m) => new Date(m.timestamp).toISOString().split('T')[0] === isoDate
+        (m) => getLocalDateString(new Date(m.timestamp)) === isoDate
       );
 
       const dayTotals = dayMeals.reduce(
@@ -218,7 +224,7 @@ export function useMacroTracker() {
       downloadAnchor.setAttribute('href', jsonString);
       downloadAnchor.setAttribute(
         'download',
-        `nutrisnap_backup_${new Date().toISOString().split('T')[0]}.json`
+        `nutrisnap_backup_${getLocalDateString(new Date())}.json`
       );
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Flame, Settings, ChevronLeft, ChevronRight, Calendar, Sparkles } from 'lucide-react';
+import { getLocalDateString } from '@/hooks/useMacroTracker';
 
 interface NavbarProps {
   selectedDate: string;
@@ -12,19 +13,19 @@ interface NavbarProps {
 
 export function Navbar({ selectedDate, onDateChange, onOpenGoals, onOpenAIPlan }: NavbarProps) {
   const dateObj = new Date(selectedDate + 'T00:00:00');
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString(new Date());
   const isToday = selectedDate === todayStr;
 
   const handlePrevDay = () => {
     const d = new Date(dateObj);
     d.setDate(d.getDate() - 1);
-    onDateChange(d.toISOString().split('T')[0]);
+    onDateChange(getLocalDateString(d));
   };
 
   const handleNextDay = () => {
     const d = new Date(dateObj);
     d.setDate(d.getDate() + 1);
-    onDateChange(d.toISOString().split('T')[0]);
+    onDateChange(getLocalDateString(d));
   };
 
   const formattedDate = dateObj.toLocaleDateString('en-US', {
