@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       weightKg = 75,
       heightCm = 175,
       activityLevel = 'moderate',
+      customAdditionalKcal,
       fitnessGoal = 'fat_loss',
       goalWeightKg,
       weeklyPaceKg = 0.5,
@@ -50,13 +51,18 @@ export async function POST(req: NextRequest) {
       console.warn('NutriSnap models.list() fallback:', e);
     }
 
-    const liftpulseContext = liftpulseProfile
-      ? `\nLIFTPULSE PLANNED ACTIVITY PROFILE (HIGH ACCURACY OVERRIDE):
+    let expenditureContext = '';
+    if (activityLevel === 'custom_expenditure' && typeof customAdditionalKcal === 'number') {
+      expenditureContext = `\nCUSTOM EXPENDITURE OVERRIDE:
+- User-specified additional daily expenditure: +${customAdditionalKcal} kcal/day above BMR.
+CRITICAL: Compute TDEE directly as BMR + ${customAdditionalKcal} kcal/day.`;
+    } else if (liftpulseProfile) {
+      expenditureContext = `\nLIFTPULSE PLANNED ACTIVITY PROFILE OVERRIDE:
 - Planned Workout Regiment: ${liftpulseProfile.workoutSummary || 'Custom Workout Regiment'}
 - Target Daily Steps Goal: ${liftpulseProfile.dailySteps?.toLocaleString() || 10000} steps/day
 - Calculated Additional Daily Activity Expenditure: +${liftpulseProfile.totalAdditionalExpenditure || 550} kcal/day above BMR.
-CRITICAL: Instead of standard multiplier activity factors, compute TDEE as: BMR + ${liftpulseProfile.totalAdditionalExpenditure || 550} kcal.`
-      : '';
+CRITICAL: Compute TDEE as: BMR + ${liftpulseProfile.totalAdditionalExpenditure || 550} kcal.`;
+    }
 
     const systemPrompt = `You are a strict, evidence-based clinical dietitian and sports nutritionist AI.
 Calculate an accurate, realistic daily caloric target and macronutrient split (Protein, Carbohydrates, Fats in grams) based on the user's metrics:
@@ -66,18 +72,18 @@ User Profile:
 - Gender: ${gender}
 - Current Weight: ${weightKg} kg
 - Height: ${heightCm} cm
-- Activity Level: ${activityLevel}${liftpulseContext}
+- Activity Mode: ${activityLevel}${expenditureContext}
 - Fitness Goal: ${fitnessGoal}
 ${fitnessGoal === 'fat_loss' && goalWeightKg ? `- Goal Weight: ${goalWeightKg} kg (Desired loss: ${Math.max(0, weightKg - goalWeightKg)} kg)` : ''}
 ${fitnessGoal === 'fat_loss' && weeklyPaceKg ? `- Target Pace: ${weeklyPaceKg} kg / week` : ''}
 - Dietary Preference: ${dietPreference}
 
-Calculation Rules (CRITICAL - DO NOT OVERESTIMATE CALORIES):
+Calculation Rules:
 1. Calculate BMR strictly using Mifflin-St Jeor:
    - Male: (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5
    - Female: (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
 2. Calculate TDEE:
-   ${liftpulseProfile ? `- TDEE = BMR + ${liftpulseProfile.totalAdditionalExpenditure || 550} kcal/day (from LiftPulse Planned Activity Profile)` : `- Calculate TDEE using CONSERVATIVE activity factors:
+   ${(activityLevel === 'custom_expenditure' && typeof customAdditionalKcal === 'number') ? `- TDEE = BMR + ${customAdditionalKcal} kcal/day (User custom expenditure)` : liftpulseProfile ? `- TDEE = BMR + ${liftpulseProfile.totalAdditionalExpenditure || 550} kcal/day` : `- Calculate TDEE using activity factors:
    - Sedentary: BMR * 1.15
    - Light: BMR * 1.25
    - Moderate: BMR * 1.35
@@ -85,7 +91,6 @@ Calculation Rules (CRITICAL - DO NOT OVERESTIMATE CALORIES):
    - Very Active: BMR * 1.55`}
 3. For fat_loss:
    - Subtract approx 550 kcal/day per 0.5 kg/week target loss from TDEE.
-   - Be conservative: Most people overestimate activity. Recommended fat loss intake should be realistic and lean.
 4. Assign macro splits in grams according to ${dietPreference}:
    - Ensure protein is sufficient (1.6 - 2.2g per kg of body weight for muscle retention).
 5. Return ONLY a valid JSON object matching this schema:
@@ -98,7 +103,7 @@ Calculation Rules (CRITICAL - DO NOT OVERESTIMATE CALORIES):
   "tdee": 2150,
   "projectedWeeks": 12,
   "projectedEndDateLabel": "October 22, 2026",
-  "summaryExplanation": "Personalized macro target calculated using your exact LiftPulse planned workout regiment and step goals.",
+  "summaryExplanation": "Personalized macro target calculated using your exact custom +${customAdditionalKcal || 550} kcal/day expenditure.",
   "dietaryTips": [
     "Tip 1 for success",
     "Tip 2 for success",
@@ -138,7 +143,7 @@ Calculation Rules (CRITICAL - DO NOT OVERESTIMATE CALORIES):
       tdee: Math.round(Number(parsedData.tdee) || 2100),
       projectedWeeks: Number(parsedData.projectedWeeks) || 8,
       projectedEndDateLabel: String(parsedData.projectedEndDateLabel || '2 Months'),
-      summaryExplanation: String(parsedData.summaryExplanation || 'Personalized macro target calculated using your LiftPulse planned workout regiment.'),
+      summaryExplanation: String(parsedData.summaryExplanation || `Personalized macro target calculated using +${customAdditionalKcal || 550} kcal/day additional expenditure.`),
       dietaryTips: Array.isArray(parsedData.dietaryTips) ? parsedData.dietaryTips : [],
     };
 

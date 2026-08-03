@@ -17,6 +17,7 @@ import {
   Zap,
   TrendingDown,
   Target,
+  Edit3,
 } from 'lucide-react';
 import { DailyGoals } from '@/types/tracker';
 
@@ -46,9 +47,12 @@ export function AIPlanWizardModal({
   >('fat_loss');
   const [goalWeightInput, setGoalWeightInput] = useState<string>('165');
   const [weeklyPaceKg, setWeeklyPaceKg] = useState<number>(0.5);
+  
+  // Activity Level & Custom Expenditure
   const [activityLevel, setActivityLevel] = useState<
-    'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'liftpulse_planned'
-  >('moderate');
+    'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'liftpulse_planned' | 'custom_expenditure'
+  >('custom_expenditure');
+  const [customAdditionalKcalInput, setCustomAdditionalKcalInput] = useState<string>('550');
 
   // LiftPulse Auto-Detected Bridge Profile
   const [liftpulseData, setLiftpulseData] = useState<{
@@ -65,7 +69,7 @@ export function AIPlanWizardModal({
           const parsed = JSON.parse(raw);
           if (parsed && parsed.totalAdditionalExpenditure > 0) {
             setLiftpulseData(parsed);
-            setActivityLevel('liftpulse_planned'); // Default to LiftPulse Planned Baseline if available!
+            setCustomAdditionalKcalInput(String(parsed.totalAdditionalExpenditure));
           }
         }
       } catch (e) {
@@ -104,17 +108,6 @@ export function AIPlanWizardModal({
   const goalWeightKg = unit === 'imperial' ? goalWeightNum / 2.20462 : goalWeightNum;
   const heightCm = unit === 'imperial' ? (Number(heightInput) || 68) * 2.54 : (Number(heightInput) || 175);
 
-  const weightDiffKg = Math.max(0, currentWeightKg - goalWeightKg);
-  const estimatedWeeks = weeklyPaceKg > 0 ? Math.ceil(weightDiffKg / weeklyPaceKg) : 0;
-  const projectedDate = new Date();
-  projectedDate.setDate(projectedDate.getDate() + estimatedWeeks * 7);
-  const formattedProjectedDate = projectedDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const dailyDeficitKcal = Math.round((weeklyPaceKg * 7700) / 7);
-
   const handleUnitToggle = (newUnit: 'metric' | 'imperial') => {
     if (newUnit === unit) return;
     if (newUnit === 'imperial') {
@@ -138,13 +131,13 @@ export function AIPlanWizardModal({
         weightKg: Math.round(currentWeightKg),
         heightCm: Math.round(heightCm),
         activityLevel,
+        customAdditionalKcal: activityLevel === 'custom_expenditure' ? (Number(customAdditionalKcalInput) || 550) : undefined,
         fitnessGoal,
         goalWeightKg: fitnessGoal === 'fat_loss' ? Math.round(goalWeightKg) : undefined,
         weeklyPaceKg: fitnessGoal === 'fat_loss' ? weeklyPaceKg : undefined,
         dietPreference,
       };
 
-      // If user selected LiftPulse planned baseline, pass full liftpulse profile
       if (activityLevel === 'liftpulse_planned' && liftpulseData) {
         payload.liftpulseProfile = liftpulseData;
       }
@@ -302,13 +295,13 @@ export function AIPlanWizardModal({
               onClick={() => setStep(2)}
               className="mt-3 w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95"
             >
-              <span>Next: Fitness Goal & Pace</span>
+              <span>Next: Fitness Goal & Expenditure</span>
               <ChevronRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         )}
 
-        {/* STEP 2: Goal & Activity Level (with LiftPulse Auto-Detect) */}
+        {/* STEP 2: Goal & Activity Level / Custom Expenditure */}
         {step === 2 && (
           <div className="mt-5 flex flex-col gap-4">
             {/* Fitness Goal selection */}
@@ -388,49 +381,71 @@ export function AIPlanWizardModal({
               </div>
             )}
 
-            {/* Activity Level Selector with LiftPulse Auto-Detect */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Activity Level Baseline</label>
-              
-              {liftpulseData && (
-                <div className="mb-2 p-2.5 rounded-xl bg-gradient-to-r from-rose-950/40 via-cyan-950/30 to-slate-900 border border-cyan-500/40 flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-xs">
-                    <Target className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                    <div>
-                      <span className="font-bold text-cyan-300 block">LiftPulse Planned Baseline Detected</span>
-                      <span className="text-[11px] text-slate-400">{liftpulseData.workoutSummary} (+{liftpulseData.totalAdditionalExpenditure} kcal/day)</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActivityLevel('liftpulse_planned')}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      activityLevel === 'liftpulse_planned'
-                        ? 'bg-cyan-500 text-slate-950'
-                        : 'bg-slate-800 text-cyan-400 border border-cyan-500/30'
-                    }`}
-                  >
-                    {activityLevel === 'liftpulse_planned' ? 'Selected' : 'Use This'}
-                  </button>
-                </div>
-              )}
+            {/* Custom Expenditure vs Dropdown */}
+            <div className="space-y-3 p-3.5 bg-slate-900/90 rounded-2xl border border-white/10">
+              <label className="block text-xs font-bold text-slate-200">Daily Calorie Expenditure Mode</label>
 
-              <select
-                value={activityLevel}
-                onChange={(e) => setActivityLevel(e.target.value as any)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
-              >
-                {liftpulseData && (
-                  <option value="liftpulse_planned">
-                    🏋️ LiftPulse Planned Regiment (+{liftpulseData.totalAdditionalExpenditure} kcal/day)
-                  </option>
-                )}
-                <option value="sedentary">Sedentary (Office job, little exercise)</option>
-                <option value="light">Lightly Active (Light exercise 1-3 days/wk)</option>
-                <option value="moderate">Moderately Active (Moderate exercise 3-5 days/wk)</option>
-                <option value="active">Very Active (Hard exercise 6-7 days/wk)</option>
-                <option value="very_active">Extra Active (Athlete, physical job + training)</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActivityLevel('custom_expenditure')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
+                    activityLevel === 'custom_expenditure'
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-md'
+                      : 'bg-slate-950 border-white/5 text-slate-400'
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Custom +kcal/day</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActivityLevel('moderate')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
+                    activityLevel !== 'custom_expenditure'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
+                      : 'bg-slate-950 border-white/5 text-slate-400'
+                  }`}
+                >
+                  <span>Activity Dropdown</span>
+                </button>
+              </div>
+
+              {/* Direct Custom Expenditure Input Box */}
+              {activityLevel === 'custom_expenditure' ? (
+                <div className="pt-2 space-y-1 animate-in fade-in">
+                  <label className="block text-[11px] font-semibold text-cyan-300">
+                    Additional Calorie Expenditure Above BMR (+kcal/day):
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="50"
+                      value={customAdditionalKcalInput}
+                      onChange={(e) => setCustomAdditionalKcalInput(e.target.value)}
+                      placeholder="e.g. 550"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/50 text-cyan-300 font-extrabold text-base focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-3 text-xs text-slate-400 font-mono font-bold">kcal/day</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Enter your workout + daily steps burn (e.g. +550 kcal/day). NutriSnap computes: TDEE = BMR + {Number(customAdditionalKcalInput) || 550} kcal.
+                  </p>
+                </div>
+              ) : (
+                <select
+                  value={activityLevel}
+                  onChange={(e) => setActivityLevel(e.target.value as any)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none"
+                >
+                  <option value="sedentary">Sedentary (Office job, little exercise)</option>
+                  <option value="light">Lightly Active (Light exercise 1-3 days/wk)</option>
+                  <option value="moderate">Moderately Active (Moderate exercise 3-5 days/wk)</option>
+                  <option value="active">Very Active (Hard exercise 6-7 days/wk)</option>
+                  <option value="very_active">Extra Active (Athlete, physical job + training)</option>
+                </select>
+              )}
             </div>
 
             {/* Step navigation buttons */}
