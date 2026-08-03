@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Flame, Settings, ChevronLeft, ChevronRight, Calendar, Sparkles, Scale } from 'lucide-react';
 import { getLocalDateString } from '@/hooks/useMacroTracker';
 
@@ -19,6 +19,7 @@ export function Navbar({
   onOpenAIPlan,
   onOpenWeighIn,
 }: NavbarProps) {
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const dateObj = new Date(selectedDate + 'T00:00:00');
   const todayStr = getLocalDateString(new Date());
   const isToday = selectedDate === todayStr;
@@ -61,8 +62,8 @@ export function Navbar({
           </div>
         </div>
 
-        {/* Date Selector */}
-        <div className="flex items-center bg-slate-900/80 border border-white/10 rounded-full px-2 py-1 shadow-inner">
+        {/* Date Selector with Calendar Picker */}
+        <div className="flex items-center bg-slate-900/80 border border-white/10 rounded-full px-2 py-1 shadow-inner relative">
           <button
             onClick={handlePrevDay}
             className="p-1 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5"
@@ -71,13 +72,28 @@ export function Navbar({
             <ChevronLeft className="w-4 h-4" />
           </button>
           
-          <button
-            onClick={() => onDateChange(todayStr)}
-            className="px-2 py-0.5 text-xs font-medium text-slate-200 hover:text-emerald-400 flex items-center gap-1.5 transition-colors"
-          >
-            <Calendar className="w-3 h-3 text-emerald-400" />
-            <span>{isToday ? 'Today' : formattedDate}</span>
-          </button>
+          {!showDatePicker ? (
+            <button
+              onClick={() => setShowDatePicker(true)}
+              className="px-2 py-0.5 text-xs font-medium text-slate-200 hover:text-emerald-400 flex items-center gap-1.5 transition-colors"
+              title="Click to select any date"
+            >
+              <Calendar className="w-3 h-3 text-emerald-400" />
+              <span>{isToday ? 'Today' : formattedDate}</span>
+            </button>
+          ) : (
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value) onDateChange(e.target.value);
+                setShowDatePicker(false);
+              }}
+              onBlur={() => setShowDatePicker(false)}
+              autoFocus
+              className="bg-slate-950 text-white text-xs font-mono px-2 py-0.5 rounded-lg border border-emerald-500 focus:outline-none"
+            />
+          )}
 
           <button
             onClick={handleNextDay}
@@ -105,7 +121,7 @@ export function Navbar({
             title="AI Macro Plan Calculator"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">AI Plan</span>
+            <span className="text-[11px] font-bold">AI Plan</span>
           </button>
 
           <button

@@ -48,6 +48,29 @@ export default function DashboardPage() {
   >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // LiftPulse Sync Banner State
+  const [liftpulseSyncData, setLiftpulseSyncData] = useState<{
+    workoutSummary: string;
+    totalAdditionalExpenditure: number;
+    dailySteps: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('nutrisnap_activity_sync_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.totalAdditionalExpenditure > 0) {
+            setLiftpulseSyncData(parsed);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
   // Handle successful image scan from CameraUpload
   const handleAnalysisComplete = (
     result: FoodAnalysisResponse,
@@ -148,6 +171,27 @@ export default function DashboardPage() {
 
       {/* Main Mobile Dashboard Container */}
       <main className="max-w-md mx-auto w-full px-4 pt-4 flex flex-col gap-5">
+        {/* LiftPulse Activity Sync Banner */}
+        {liftpulseSyncData && (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-950/60 via-slate-900 to-cyan-950/60 border border-cyan-500/40 shadow-xl flex items-center justify-between gap-2 animate-in fade-in">
+            <div>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                🏋️ LiftPulse Activity Synced
+              </span>
+              <h4 className="text-xs font-bold text-white mt-1">
+                {liftpulseSyncData.workoutSummary} (+{liftpulseSyncData.totalAdditionalExpenditure} kcal/day)
+              </h4>
+              <p className="text-[11px] text-slate-400">Target steps: {liftpulseSyncData.dailySteps?.toLocaleString() || 10000} steps/day</p>
+            </div>
+            <button
+              onClick={() => setIsAIPlanOpen(true)}
+              className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 text-xs font-black rounded-xl shadow-md whitespace-nowrap"
+            >
+              Recalculate Macros
+            </button>
+          </div>
+        )}
+
         {/* Daily Summary Progress Rings & Bars */}
         <DailyProgress summary={todaySummary} goals={goals} />
 

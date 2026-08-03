@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Sparkles,
@@ -16,6 +16,7 @@ import {
   Calendar,
   Zap,
   TrendingDown,
+  Target,
 } from 'lucide-react';
 import { DailyGoals } from '@/types/tracker';
 
@@ -33,21 +34,45 @@ export function AIPlanWizardModal({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [unit, setUnit] = useState<'metric' | 'imperial'>('imperial');
 
-  // Form Inputs (using string inputs for smooth typing without forced zero or rounding artifacts)
+  // Form Inputs
   const [ageInput, setAgeInput] = useState<string>('28');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
-  const [weightInput, setWeightInput] = useState<string>('180'); // 180 lbs or 82 kg depending on unit
-  const [heightInput, setHeightInput] = useState<string>('70'); // 70 inches or 178 cm
+  const [weightInput, setWeightInput] = useState<string>('180');
+  const [heightInput, setHeightInput] = useState<string>('70');
 
   // Goal & Pace Inputs
   const [fitnessGoal, setFitnessGoal] = useState<
     'fat_loss' | 'maintenance' | 'muscle_gain' | 'recomp'
   >('fat_loss');
-  const [goalWeightInput, setGoalWeightInput] = useState<string>('165'); // Goal weight in active unit
-  const [weeklyPaceKg, setWeeklyPaceKg] = useState<number>(0.5); // 0.25 to 1.0 kg/wk
+  const [goalWeightInput, setGoalWeightInput] = useState<string>('165');
+  const [weeklyPaceKg, setWeeklyPaceKg] = useState<number>(0.5);
   const [activityLevel, setActivityLevel] = useState<
-    'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+    'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'liftpulse_planned'
   >('moderate');
+
+  // LiftPulse Auto-Detected Bridge Profile
+  const [liftpulseData, setLiftpulseData] = useState<{
+    workoutSummary: string;
+    totalAdditionalExpenditure: number;
+    dailySteps: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('nutrisnap_activity_sync_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.totalAdditionalExpenditure > 0) {
+            setLiftpulseData(parsed);
+            setActivityLevel('liftpulse_planned'); // Default to LiftPulse Planned Baseline if available!
+          }
+        }
+      } catch (e) {
+        console.error('Failed to read LiftPulse sync data in NutriSnap', e);
+      }
+    }
+  }, [isOpen]);
 
   // Step 3 Preferences
   const [dietPreference, setDietPreference] = useState<
@@ -75,12 +100,10 @@ export function AIPlanWizardModal({
   const currentWeightNum = Number(weightInput) || 75;
   const goalWeightNum = Number(goalWeightInput) || 70;
 
-  // Convert to kg for API and calculations regardless of active unit
   const currentWeightKg = unit === 'imperial' ? currentWeightNum / 2.20462 : currentWeightNum;
   const goalWeightKg = unit === 'imperial' ? goalWeightNum / 2.20462 : goalWeightNum;
   const heightCm = unit === 'imperial' ? (Number(heightInput) || 68) * 2.54 : (Number(heightInput) || 175);
 
-  // Real-time fat loss projection math
   const weightDiffKg = Math.max(0, currentWeightKg - goalWeightKg);
   const estimatedWeeks = weeklyPaceKg > 0 ? Math.ceil(weightDiffKg / weeklyPaceKg) : 0;
   const projectedDate = new Date();
@@ -95,12 +118,10 @@ export function AIPlanWizardModal({
   const handleUnitToggle = (newUnit: 'metric' | 'imperial') => {
     if (newUnit === unit) return;
     if (newUnit === 'imperial') {
-      // Metric -> Imperial
       setWeightInput(String(Math.round(currentWeightNum * 2.20462)));
       setGoalWeightInput(String(Math.round(goalWeightNum * 2.20462)));
       setHeightInput(String(Math.round((Number(heightInput) || 175) / 2.54)));
     } else {
-      // Imperial -> Metric
       setWeightInput(String(Math.round(currentWeightNum / 2.20462)));
       setGoalWeightInput(String(Math.round(goalWeightNum / 2.20462)));
       setHeightInput(String(Math.round((Number(heightInput) || 70) * 2.54)));
@@ -111,20 +132,27 @@ export function AIPlanWizardModal({
   const handleGenerateAIPlan = async () => {
     try {
       setIsGenerating(true);
+      const payload: any = {
+        age: Number(ageInput) || 28,
+        gender,
+        weightKg: Math.round(currentWeightKg),
+        heightCm: Math.round(heightCm),
+        activityLevel,
+        fitnessGoal,
+        goalWeightKg: fitnessGoal === 'fat_loss' ? Math.round(goalWeightKg) : undefined,
+        weeklyPaceKg: fitnessGoal === 'fat_loss' ? weeklyPaceKg : undefined,
+        dietPreference,
+      };
+
+      // If user selected LiftPulse planned baseline, pass full liftpulse profile
+      if (activityLevel === 'liftpulse_planned' && liftpulseData) {
+        payload.liftpulseProfile = liftpulseData;
+      }
+
       const response = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          age: Number(ageInput) || 28,
-          gender,
-          weightKg: Math.round(currentWeightKg),
-          heightCm: Math.round(heightCm),
-          activityLevel,
-          fitnessGoal,
-          goalWeightKg: fitnessGoal === 'fat_loss' ? Math.round(goalWeightKg) : undefined,
-          weeklyPaceKg: fitnessGoal === 'fat_loss' ? weeklyPaceKg : undefined,
-          dietPreference,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -280,7 +308,7 @@ export function AIPlanWizardModal({
           </div>
         )}
 
-        {/* STEP 2: Goal, Target Weight & Pace Sliders */}
+        {/* STEP 2: Goal & Activity Level (with LiftPulse Auto-Detect) */}
         {step === 2 && (
           <div className="mt-5 flex flex-col gap-4">
             {/* Fitness Goal selection */}
@@ -309,7 +337,7 @@ export function AIPlanWizardModal({
               </div>
             </div>
 
-            {/* DYNAMIC FAT LOSS SLIDERS & GOAL WEIGHT */}
+            {/* DYNAMIC FAT LOSS SLIDERS */}
             {fitnessGoal === 'fat_loss' && (
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-950 border border-emerald-500/30 flex flex-col gap-3.5 shadow-inner">
                 <div className="flex items-center justify-between">
@@ -317,10 +345,8 @@ export function AIPlanWizardModal({
                     <TrendingDown className="w-4 h-4" />
                     Fat Loss Target & Pace Controls
                   </span>
-                  <span className="text-[11px] text-slate-400">Custom Rate</span>
                 </div>
 
-                {/* Target Goal Weight */}
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
                     <span>Target Goal Weight ({unit === 'metric' ? 'kg' : 'lbs'})</span>
@@ -340,13 +366,8 @@ export function AIPlanWizardModal({
                     onChange={(e) => setGoalWeightInput(e.target.value)}
                     className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-950 rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-0.5">
-                    <span>Desired Loss: {(currentWeightNum - goalWeightNum).toFixed(1)} {unit === 'metric' ? 'kg' : 'lbs'}</span>
-                    <span>Current: {currentWeightNum} {unit === 'metric' ? 'kg' : 'lbs'}</span>
-                  </div>
                 </div>
 
-                {/* Rate of Weight Loss Slider */}
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
                     <span>Weight Loss Speed / Pace</span>
@@ -363,42 +384,47 @@ export function AIPlanWizardModal({
                     onChange={(e) => setWeeklyPaceKg(Number(e.target.value))}
                     className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-950 rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                    <span>Slow & Steady (0.25kg)</span>
-                    <span>Moderate (0.5kg)</span>
-                    <span>Aggressive (1.0kg)</span>
-                  </div>
-                </div>
-
-                {/* Real-time calculated end date & deficit card */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-xs">
-                  <div className="p-2 rounded-xl bg-slate-950/80 border border-white/5 flex flex-col">
-                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-emerald-400" /> Goal Completion
-                    </span>
-                    <span className="font-bold text-emerald-300 mt-0.5">{formattedProjectedDate}</span>
-                    <span className="text-[10px] text-slate-500">~{estimatedWeeks} weeks away</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-950/80 border border-white/5 flex flex-col">
-                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Zap className="w-3 h-3 text-amber-400" /> Daily Deficit
-                    </span>
-                    <span className="font-bold text-amber-300 mt-0.5">-{dailyDeficitKcal} kcal/day</span>
-                    <span className="text-[10px] text-slate-500">Fat burn target</span>
-                  </div>
                 </div>
               </div>
             )}
 
-            {/* Activity Level */}
+            {/* Activity Level Selector with LiftPulse Auto-Detect */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Activity Level</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Activity Level Baseline</label>
+              
+              {liftpulseData && (
+                <div className="mb-2 p-2.5 rounded-xl bg-gradient-to-r from-rose-950/40 via-cyan-950/30 to-slate-900 border border-cyan-500/40 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs">
+                    <Target className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                    <div>
+                      <span className="font-bold text-cyan-300 block">LiftPulse Planned Baseline Detected</span>
+                      <span className="text-[11px] text-slate-400">{liftpulseData.workoutSummary} (+{liftpulseData.totalAdditionalExpenditure} kcal/day)</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivityLevel('liftpulse_planned')}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      activityLevel === 'liftpulse_planned'
+                        ? 'bg-cyan-500 text-slate-950'
+                        : 'bg-slate-800 text-cyan-400 border border-cyan-500/30'
+                    }`}
+                  >
+                    {activityLevel === 'liftpulse_planned' ? 'Selected' : 'Use This'}
+                  </button>
+                </div>
+              )}
+
               <select
                 value={activityLevel}
                 onChange={(e) => setActivityLevel(e.target.value as any)}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
               >
+                {liftpulseData && (
+                  <option value="liftpulse_planned">
+                    🏋️ LiftPulse Planned Regiment (+{liftpulseData.totalAdditionalExpenditure} kcal/day)
+                  </option>
+                )}
                 <option value="sedentary">Sedentary (Office job, little exercise)</option>
                 <option value="light">Lightly Active (Light exercise 1-3 days/wk)</option>
                 <option value="moderate">Moderately Active (Moderate exercise 3-5 days/wk)</option>
@@ -419,9 +445,7 @@ export function AIPlanWizardModal({
 
               <button
                 type="button"
-                onClick={() => {
-                  setStep(3);
-                }}
+                onClick={() => setStep(3)}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
                 <span>Next: Dietary Preference & Calculate</span>
@@ -512,11 +536,6 @@ export function AIPlanWizardModal({
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
                     <div>BMR: <span className="font-bold text-slate-200">{planResult.bmr} kcal</span></div>
                     <div>TDEE: <span className="font-bold text-slate-200">{planResult.tdee} kcal</span></div>
-                    {fitnessGoal === 'fat_loss' && (
-                      <div className="col-span-2 text-emerald-400 font-semibold">
-                        🎉 Projected Goal Date: {planResult.projectedEndDateLabel} (~{planResult.projectedWeeks} weeks)
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -540,18 +559,6 @@ export function AIPlanWizardModal({
                     <span className="text-lg font-black text-amber-400">{planResult.fatGrams}g</span>
                   </div>
                 </div>
-
-                {/* Dietary Tips */}
-                {planResult.dietaryTips.length > 0 && (
-                  <div className="p-3 rounded-xl bg-slate-900/80 border border-white/10 text-xs flex flex-col gap-1">
-                    <span className="font-bold text-slate-200">AI Nutritionist Guidance:</span>
-                    <ul className="list-disc list-inside text-slate-400 text-[11px] space-y-0.5">
-                      {planResult.dietaryTips.map((tip, i) => (
-                        <li key={i}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
                 {/* Apply Button */}
                 <div className="flex items-center gap-3 pt-2">
