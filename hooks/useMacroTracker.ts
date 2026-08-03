@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Meal, DailyGoals } from '@/types/tracker';
+import { Meal, DailyGoals, WeighIn } from '@/types/tracker';
 
 // Local timezone date string helper (YYYY-MM-DD)
 export function getLocalDateString(dateInput: Date | string = new Date()): string {
@@ -18,6 +18,12 @@ const DEFAULT_GOALS: DailyGoals = {
   carbsGrams: 200,
   fatGrams: 65,
 };
+
+const SAMPLE_WEIGH_INS: WeighIn[] = [
+  { id: 'w-1', weightKg: 82.5, date: getLocalDateString(new Date(Date.now() - 14 * 86400 * 1000)) },
+  { id: 'w-2', weightKg: 81.8, date: getLocalDateString(new Date(Date.now() - 7 * 86400 * 1000)) },
+  { id: 'w-3', weightKg: 81.2, date: getLocalDateString(new Date()) },
+];
 
 const SAMPLE_MEALS: Meal[] = [
   {
@@ -63,6 +69,7 @@ const SAMPLE_MEALS: Meal[] = [
 
 export function useMacroTracker() {
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
   const [goals, setGoals] = useState<DailyGoals>(DEFAULT_GOALS);
   const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [isLoaded, setIsLoaded] = useState(false);
@@ -83,6 +90,14 @@ export function useMacroTracker() {
         setMeals(SAMPLE_MEALS);
         localStorage.setItem('nutrisnap_meals', JSON.stringify(SAMPLE_MEALS));
       }
+
+      const savedWeighIns = localStorage.getItem('nutrisnap_weighins');
+      if (savedWeighIns) {
+        setWeighIns(JSON.parse(savedWeighIns));
+      } else {
+        setWeighIns(SAMPLE_WEIGH_INS);
+        localStorage.setItem('nutrisnap_weighins', JSON.stringify(SAMPLE_WEIGH_INS));
+      }
     } catch (e) {
       console.error('Error reading from localStorage', e);
       setMeals(SAMPLE_MEALS);
@@ -90,6 +105,33 @@ export function useMacroTracker() {
       setIsLoaded(true);
     }
   }, []);
+
+  const saveWeighIns = (newWeighIns: WeighIn[]) => {
+    setWeighIns(newWeighIns);
+    try {
+      localStorage.setItem('nutrisnap_weighins', JSON.stringify(newWeighIns));
+    } catch (e) {
+      console.error('Error saving weigh-ins to localStorage', e);
+    }
+  };
+
+  const addWeighIn = (weightKg: number, notes?: string) => {
+    const todayStr = getLocalDateString(new Date());
+    const newEntry: WeighIn = {
+      id: 'w-' + Date.now(),
+      weightKg,
+      date: todayStr,
+      notes,
+    };
+    const updated = [newEntry, ...weighIns.filter((w) => w.date !== todayStr)];
+    saveWeighIns(updated);
+    return newEntry;
+  };
+
+  const deleteWeighIn = (id: string) => {
+    const updated = weighIns.filter((w) => w.id !== id);
+    saveWeighIns(updated);
+  };
 
   const saveMeals = (newMeals: Meal[]) => {
     setMeals(newMeals);
@@ -256,6 +298,7 @@ export function useMacroTracker() {
   return {
     meals,
     filteredMeals,
+    weighIns,
     goals,
     selectedDate,
     setSelectedDate,
@@ -263,6 +306,8 @@ export function useMacroTracker() {
     addMeal,
     updateMeal,
     deleteMeal,
+    addWeighIn,
+    deleteWeighIn,
     updateGoals,
     get7DayHistory,
     exportData,

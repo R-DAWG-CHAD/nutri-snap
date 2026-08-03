@@ -31,6 +31,13 @@ export interface FoodAnalysisResponse {
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
 }
 
+export interface WeighIn {
+  id: string;
+  weightKg: number;
+  date: string; // YYYY-MM-DD
+  notes?: string;
+}
+
 export interface DailySummary {
   date: string; // YYYY-MM-DD
   totalCalories: number;

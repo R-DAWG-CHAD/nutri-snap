@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Flame, Settings, ChevronLeft, ChevronRight, Calendar, Sparkles } from 'lucide-react';
+import { Flame, Settings, ChevronLeft, ChevronRight, Calendar, Sparkles, Scale } from 'lucide-react';
 import { getLocalDateString } from '@/hooks/useMacroTracker';
 
 interface NavbarProps {
@@ -9,9 +9,16 @@ interface NavbarProps {
   onDateChange: (date: string) => void;
   onOpenGoals: () => void;
   onOpenAIPlan: () => void;
+  onOpenWeighIn: () => void;
 }
 
-export function Navbar({ selectedDate, onDateChange, onOpenGoals, onOpenAIPlan }: NavbarProps) {
+export function Navbar({
+  selectedDate,
+  onDateChange,
+  onOpenGoals,
+  onOpenAIPlan,
+  onOpenWeighIn,
+}: NavbarProps) {
   const dateObj = new Date(selectedDate + 'T00:00:00');
   const todayStr = getLocalDateString(new Date());
   const isToday = selectedDate === todayStr;
@@ -83,6 +90,15 @@ export function Navbar({ selectedDate, onDateChange, onOpenGoals, onOpenAIPlan }
 
         {/* Action controls */}
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={onOpenWeighIn}
+            className="p-2 text-cyan-400 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/10"
+            title="Weekly Scale Weigh-Ins"
+            aria-label="Weekly Scale Weigh-Ins"
+          >
+            <Scale className="w-5 h-5" />
+          </button>
+
           <button
             onClick={onOpenAIPlan}
             className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 rounded-xl border border-emerald-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"

@@ -9,6 +9,9 @@ import { WeeklyChart } from '@/components/WeeklyChart';
 import { MealModal } from '@/components/MealModal';
 import { GoalsModal } from '@/components/GoalsModal';
 import { AIPlanWizardModal } from '@/components/AIPlanWizardModal';
+import { WeighInModal } from '@/components/WeighInModal';
+import { MacroWarnings } from '@/components/MacroWarnings';
+import { EveningProteinAssistant } from '@/components/EveningProteinAssistant';
 import { useMacroTracker } from '@/hooks/useMacroTracker';
 import { FoodAnalysisResponse, Meal } from '@/types/tracker';
 import { AlertCircle, X } from 'lucide-react';
@@ -17,6 +20,7 @@ export default function DashboardPage() {
   const {
     meals,
     filteredMeals,
+    weighIns,
     goals,
     selectedDate,
     setSelectedDate,
@@ -24,6 +28,8 @@ export default function DashboardPage() {
     addMeal,
     updateMeal,
     deleteMeal,
+    addWeighIn,
+    deleteWeighIn,
     updateGoals,
     get7DayHistory,
     exportData,
@@ -34,6 +40,7 @@ export default function DashboardPage() {
   // Modals state
   const [isGoalsOpen, setIsGoalsOpen] = useState(false);
   const [isAIPlanOpen, setIsAIPlanOpen] = useState(false);
+  const [isWeighInOpen, setIsWeighInOpen] = useState(false);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [pendingAnalysis, setPendingAnalysis] = useState<
@@ -55,7 +62,7 @@ export default function DashboardPage() {
   const handleAddManualClick = () => {
     setEditingMeal(null);
     setPendingAnalysis({
-      mealName: 'Custom Meal',
+      mealName: '',
       estimatedWeightGrams: 200,
       calories: 350,
       proteinGrams: 25,
@@ -118,6 +125,7 @@ export default function DashboardPage() {
         onDateChange={setSelectedDate}
         onOpenGoals={() => setIsGoalsOpen(true)}
         onOpenAIPlan={() => setIsAIPlanOpen(true)}
+        onOpenWeighIn={() => setIsWeighInOpen(true)}
       />
 
       {/* Error Banner */}
@@ -143,7 +151,17 @@ export default function DashboardPage() {
         {/* Daily Summary Progress Rings & Bars */}
         <DailyProgress summary={todaySummary} goals={goals} />
 
-        {/* Photo Meal Logger */}
+        {/* Multi-Day Macro Warnings & Insights */}
+        <MacroWarnings meals={meals} goals={goals} />
+
+        {/* Smart Evening Protein Assistant */}
+        <EveningProteinAssistant
+          todaySummary={todaySummary}
+          goals={goals}
+          onQuickLog={(meal) => addMeal(meal)}
+        />
+
+        {/* Photo Meal Logger & Scanner */}
         <CameraUpload
           onAnalysisComplete={handleAnalysisComplete}
           onError={(err) => setErrorMessage(err)}
@@ -188,6 +206,16 @@ export default function DashboardPage() {
         isOpen={isAIPlanOpen}
         onClose={() => setIsAIPlanOpen(false)}
         onApplyPlan={updateGoals}
+      />
+
+      <WeighInModal
+        isOpen={isWeighInOpen}
+        onClose={() => setIsWeighInOpen(false)}
+        weighIns={weighIns}
+        goals={goals}
+        onAddWeighIn={addWeighIn}
+        onDeleteWeighIn={deleteWeighIn}
+        onUpdateGoals={updateGoals}
       />
     </div>
   );

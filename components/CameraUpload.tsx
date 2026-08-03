@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Camera, Upload, Sparkles, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 import { FoodAnalysisResponse } from '@/types/tracker';
 
 interface CameraUploadProps {
@@ -13,13 +13,13 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [imageCaption, setImageCaption] = useState('');
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     await processImageFile(file);
-    // Reset file input so user can re-upload same file if desired
     e.target.value = '';
   };
 
@@ -27,7 +27,6 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
     try {
       setIsAnalyzing(true);
       
-      // Read local image preview base64
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -37,9 +36,11 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
       const dataUrl = await base64Promise;
       setPreviewSrc(dataUrl);
 
-      // Submit file via FormData to API route
       const formData = new FormData();
       formData.append('image', file);
+      if (imageCaption.trim()) {
+        formData.append('imageCaption', imageCaption.trim());
+      }
 
       const response = await fetch('/api/analyze-food', {
         method: 'POST',
@@ -64,7 +65,6 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
 
   return (
     <div className="w-full">
-      {/* Hidden file input supporting mobile camera capture */}
       <input
         ref={fileInputRef}
         type="file"
@@ -74,13 +74,12 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
         onChange={handleFileSelect}
       />
 
-      {/* Upload Trigger Area */}
-      <div className="relative group overflow-hidden rounded-3xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-slate-900/60 p-6 transition-all duration-300 shadow-xl">
+      <div className="relative group overflow-hidden rounded-3xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-slate-900/60 p-5 transition-all duration-300 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-cyan-500/10 opacity-50 group-hover:opacity-100 transition-opacity" />
 
         <div className="relative z-10 flex flex-col items-center justify-center text-center gap-3">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/10">
-            <Camera className="w-8 h-8 text-emerald-400" />
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/10">
+            <Camera className="w-7 h-7 text-emerald-400" />
           </div>
 
           <div>
@@ -88,16 +87,30 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
               <span>Snap or Upload Food</span>
               <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
             </h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs">
-              AI instantly estimates portions, calories, protein, carbs, and fat
+            <p className="text-xs text-slate-400 mt-0.5 max-w-xs">
+              AI estimates portions, calories, and macros from photo
             </p>
+          </div>
+
+          {/* Optional Caption/Note input for image scanning */}
+          <div className="w-full max-w-xs relative mt-0.5">
+            <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none">
+              <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
+            </div>
+            <input
+              type="text"
+              value={imageCaption}
+              onChange={(e) => setImageCaption(e.target.value)}
+              placeholder="Optional note e.g. cooked in 1 tbsp butter..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:border-emerald-400 shadow-inner"
+            />
           </div>
 
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
-              className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
             >
               <Camera className="w-4 h-4 stroke-[2.5]" />
               <span>Take Photo</span>
@@ -115,11 +128,9 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
         </div>
       </div>
 
-      {/* Loading Scanning Modal Overlay */}
       {isAnalyzing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm glass-modal rounded-3xl p-6 border border-emerald-500/30 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
-            {/* Scanning line animation over preview image */}
             {previewSrc && (
               <div className="relative w-48 h-48 rounded-2xl overflow-hidden mb-4 border border-white/20 shadow-inner">
                 <img
@@ -127,7 +138,6 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
                   alt="Analyzing preview"
                   className="w-full h-full object-cover opacity-80"
                 />
-                {/* Laser scan bar */}
                 <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 shadow-[0_0_15px_#10b981] animate-laser-scan" />
               </div>
             )}
@@ -138,7 +148,7 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
             </div>
 
             <p className="text-xs text-slate-400">
-              Identifying ingredients, portion weights, and macro ratios
+              {imageCaption ? `Factoring in: "${imageCaption}"` : 'Identifying ingredients, portion weights, and macro ratios'}
             </p>
           </div>
         </div>
