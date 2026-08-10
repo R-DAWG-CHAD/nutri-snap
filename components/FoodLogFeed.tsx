@@ -22,49 +22,47 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
   };
 
   return (
-    <section className="w-full glass-panel rounded-3xl p-5 border border-white/10 shadow-xl">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+    <section className="w-full max-w-full overflow-hidden glass-panel rounded-3xl p-4 sm:p-5 border border-white/10 shadow-xl">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
             <Utensils className="w-4 h-4 text-violet-400" />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-100">Logged Meals</h3>
-            <p className="text-[11px] text-slate-400">
+          <div className="min-w-0">
+            <h3 className="text-sm sm:text-base font-bold text-slate-100 truncate">Logged Meals</h3>
+            <p className="text-[11px] text-slate-400 truncate">
               {meals.length} {meals.length === 1 ? 'item' : 'items'} today
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onAddManual}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5 text-emerald-400" />
-            <span>AI Text / Manual</span>
-          </button>
-        </div>
+        <button
+          onClick={onAddManual}
+          className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 flex-shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+          <span className="whitespace-nowrap">AI Text / Manual</span>
+        </button>
       </div>
 
       {meals.length === 0 ? (
-        <div className="py-10 text-center flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-slate-950/40">
-          <Utensils className="w-10 h-10 text-slate-600 mb-2 stroke-[1.5]" />
-          <p className="text-sm font-semibold text-slate-300">No meals logged for this date</p>
-          <p className="text-xs text-slate-500 max-w-xs mt-0.5">
-            Use the camera above or manual entry button to track your nutrition!
+        <div className="py-8 text-center flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-slate-950/40 p-4">
+          <Utensils className="w-8 h-8 text-slate-600 mb-2 stroke-[1.5]" />
+          <p className="text-xs sm:text-sm font-semibold text-slate-300">No meals logged for this date</p>
+          <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
+            Use photo scanner or AI text entry to track your nutrition!
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5 max-w-full">
           {meals.map((meal) => (
             <div
               key={meal.id}
-              className="group p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-white/5 hover:border-white/15 transition-all flex items-center justify-between gap-3 shadow-md"
+              className="group p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-white/5 hover:border-white/15 transition-all flex items-center justify-between gap-2 shadow-md max-w-full overflow-hidden"
             >
-              <div className="flex items-center gap-3.5 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 {/* Thumbnail Image or Icon */}
-                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-800 border border-white/10 flex-shrink-0 flex items-center justify-center">
+                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-800 border border-white/10 flex-shrink-0 flex items-center justify-center">
                   {meal.imageUrl ? (
                     <img
                       src={meal.imageUrl}
@@ -72,10 +70,10 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Utensils className="w-6 h-6 text-slate-500" />
+                    <Utensils className="w-5 h-5 text-slate-500" />
                   )}
                   {meal.mealType && (
-                    <span className="absolute top-1 left-1 px-1 py-0.2 text-[9px] font-bold uppercase bg-slate-950/80 text-emerald-400 rounded">
+                    <span className="absolute top-0.5 left-0.5 px-1 py-0.2 text-[8px] font-bold uppercase bg-slate-950/80 text-emerald-400 rounded">
                       {meal.mealType[0]}
                     </span>
                   )}
@@ -83,27 +81,27 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
 
                 {/* Details */}
                 <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-slate-100 truncate group-hover:text-emerald-300 transition-colors">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-100 truncate group-hover:text-emerald-300 transition-colors">
                     {meal.mealName}
                   </h4>
 
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
-                    <span className="flex items-center gap-1 font-medium text-slate-300">
-                      <Flame className="w-3 h-3 text-violet-400" />
+                  <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
+                    <span className="flex items-center gap-0.5 font-medium text-slate-300">
+                      <Flame className="w-3 h-3 text-violet-400 flex-shrink-0" />
                       {meal.calories} kcal
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Scale className="w-3 h-3 text-slate-500" />
+                    <span className="flex items-center gap-0.5">
+                      <Scale className="w-3 h-3 text-slate-500 flex-shrink-0" />
                       {meal.estimatedWeightGrams}g
                     </span>
-                    <span className="flex items-center gap-1 text-slate-500">
-                      <Clock className="w-3 h-3" />
+                    <span className="flex items-center gap-0.5 text-slate-500">
+                      <Clock className="w-3 h-3 flex-shrink-0" />
                       {formatTime(meal.timestamp)}
                     </span>
                   </div>
 
                   {/* Macro chips */}
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px]">
+                  <div className="flex items-center gap-1.5 mt-1 text-[9px] flex-wrap">
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
                       P: {meal.proteinGrams}g
                     </span>
@@ -118,21 +116,21 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-0.5 flex-shrink-0">
                 <button
                   onClick={() => onEdit(meal)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-emerald-400 hover:bg-white/5 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-white/5 transition-colors"
                   title="Edit meal"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-3.5 h-3.5" />
                 </button>
 
                 <button
                   onClick={() => onDelete(meal.id)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors"
                   title="Delete meal"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

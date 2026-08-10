@@ -64,7 +64,7 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full overflow-hidden">
       <input
         ref={fileInputRef}
         type="file"
@@ -74,27 +74,27 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
         onChange={handleFileSelect}
       />
 
-      <div className="relative group overflow-hidden rounded-3xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-slate-900/60 p-5 transition-all duration-300 shadow-xl">
+      <div className="relative group overflow-hidden rounded-3xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-slate-900/60 p-4 transition-all duration-300 shadow-xl max-w-full">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-cyan-500/10 opacity-50 group-hover:opacity-100 transition-opacity" />
 
-        <div className="relative z-10 flex flex-col items-center justify-center text-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/10">
-            <Camera className="w-7 h-7 text-emerald-400" />
+        <div className="relative z-10 flex flex-col items-center justify-center text-center gap-2.5 max-w-full">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/10 flex-shrink-0">
+            <Camera className="w-6 h-6 text-emerald-400" />
           </div>
 
-          <div>
-            <h3 className="text-base font-bold text-slate-100 flex items-center justify-center gap-1.5">
+          <div className="max-w-full px-2">
+            <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center justify-center gap-1.5">
               <span>Snap or Upload Food</span>
-              <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse flex-shrink-0" />
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5 max-w-xs">
+            <p className="text-[11px] text-slate-400 mt-0.5 max-w-xs">
               AI estimates portions, calories, and macros from photo
             </p>
           </div>
 
-          {/* Optional Caption/Note input for image scanning */}
-          <div className="w-full max-w-xs relative mt-0.5">
-            <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none">
+          {/* Optional Caption/Note input */}
+          <div className="w-full max-w-xs relative mt-0.5 px-1">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
               <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
             </div>
             <input
@@ -102,27 +102,28 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
               value={imageCaption}
               onChange={(e) => setImageCaption(e.target.value)}
               placeholder="Optional note e.g. cooked in 1 tbsp butter..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:border-emerald-400 shadow-inner"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:border-emerald-400 shadow-inner truncate"
             />
           </div>
 
-          <div className="flex items-center gap-3 mt-1">
+          {/* Action buttons fitting container width */}
+          <div className="flex items-center justify-center gap-2.5 mt-1 w-full max-w-xs px-1">
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 min-w-0"
             >
-              <Camera className="w-4 h-4 stroke-[2.5]" />
-              <span>Take Photo</span>
+              <Camera className="w-4 h-4 flex-shrink-0 stroke-[2.5]" />
+              <span className="truncate">Take Photo</span>
             </button>
 
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 min-w-0"
             >
-              <Upload className="w-4 h-4 text-slate-400" />
-              <span>Choose File</span>
+              <Upload className="w-4 h-4 flex-shrink-0 text-slate-400" />
+              <span className="truncate">Choose File</span>
             </button>
           </div>
         </div>
@@ -132,7 +133,7 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm glass-modal rounded-3xl p-6 border border-emerald-500/30 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
             {previewSrc && (
-              <div className="relative w-48 h-48 rounded-2xl overflow-hidden mb-4 border border-white/20 shadow-inner">
+              <div className="relative w-44 h-44 rounded-2xl overflow-hidden mb-4 border border-white/20 shadow-inner">
                 <img
                   src={previewSrc}
                   alt="Analyzing preview"
@@ -142,12 +143,12 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-base mb-1">
-              <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm mb-1">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
               <span>Analyzing Meal with Gemini...</span>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 truncate max-w-full">
               {imageCaption ? `Factoring in: "${imageCaption}"` : 'Identifying ingredients, portion weights, and macro ratios'}
             </p>
           </div>
