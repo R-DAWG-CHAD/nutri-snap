@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Meal, DailyGoals, WeighIn } from '@/types/tracker';
+import { compressImage } from '@/utils/compressImage';
 
 // Local timezone date string helper (YYYY-MM-DD)
 export function getLocalDateString(dateInput: Date | string = new Date()): string {
@@ -133,12 +134,37 @@ export function useMacroTracker() {
     saveWeighIns(updated);
   };
 
-  const saveMeals = (newMeals: Meal[]) => {
-    setMeals(newMeals);
+  // Quota-safe meal saving with thumbnail image compression
+  const saveMeals = async (newMeals: Meal[]) => {
+    const processedMeals = await Promise.all(
+      newMeals.map(async (m) => {
+        if (m.imageUrl && m.imageUrl.startsWith('data:image') && m.imageUrl.length > 40000) {
+          const compressed = await compressImage(m.imageUrl, 300, 300, 0.6);
+          return { ...m, imageUrl: compressed };
+        }
+        return m;
+      })
+    );
+
+    setMeals(processedMeals);
+
     try {
-      localStorage.setItem('nutrisnap_meals', JSON.stringify(newMeals));
+      localStorage.setItem('nutrisnap_meals', JSON.stringify(processedMeals));
     } catch (e) {
-      console.error('Error saving meals to localStorage', e);
+      console.warn('LocalStorage QuotaExceededError - applying fallback cleanup to save meals', e);
+      try {
+        // Strip heavy base64 strings from old meals (keeping text data & macros intact)
+        const lightMeals = processedMeals.map((m, idx) => {
+          if (idx > 4 && m.imageUrl && m.imageUrl.startsWith('data:image')) {
+            return { ...m, imageUrl: undefined };
+          }
+          return m;
+        });
+        localStorage.setItem('nutrisnap_meals', JSON.stringify(lightMeals));
+        setMeals(lightMeals);
+      } catch (err2) {
+        console.error('Failed to save to LocalStorage', err2);
+      }
     }
   };
 
@@ -151,11 +177,10 @@ export function useMacroTracker() {
     }
   };
 
-  const addMeal = (mealData: Omit<Meal, 'id' | 'timestamp'>, customDate?: string) => {
+  const addMeal = async (mealData: Omit<Meal, 'id' | 'timestamp'>, customDate?: string) => {
     const targetDateStr = customDate || selectedDate;
     const now = new Date();
-    
-    // Construct Date object in local time for target date
+
     const [year, month, day] = targetDateStr.split('-').map(Number);
     const mealTimestampDate = new Date(
       year,
@@ -166,19 +191,31 @@ export function useMacroTracker() {
       now.getSeconds()
     );
 
+    let compressedUrl = mealData.imageUrl;
+    if (compressedUrl && compressedUrl.startsWith('data:image') && compressedUrl.length > 40000) {
+      compressedUrl = await compressImage(compressedUrl, 300, 300, 0.6);
+    }
+
     const newMeal: Meal = {
       ...mealData,
+      imageUrl: compressedUrl,
       id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
       timestamp: mealTimestampDate.toISOString(),
     };
     const updated = [newMeal, ...meals];
-    saveMeals(updated);
+    await saveMeals(updated);
     return newMeal;
   };
 
-  const updateMeal = (updatedMeal: Meal) => {
-    const updated = meals.map((m) => (m.id === updatedMeal.id ? updatedMeal : m));
-    saveMeals(updated);
+  const updateMeal = async (updatedMeal: Meal) => {
+    let compressedUrl = updatedMeal.imageUrl;
+    if (compressedUrl && compressedUrl.startsWith('data:image') && compressedUrl.length > 40000) {
+      compressedUrl = await compressImage(compressedUrl, 300, 300, 0.6);
+    }
+
+    const processed = { ...updatedMeal, imageUrl: compressedUrl };
+    const updated = meals.map((m) => (m.id === processed.id ? processed : m));
+    await saveMeals(updated);
   };
 
   const deleteMeal = (id: string) => {
@@ -202,7 +239,6 @@ export function useMacroTracker() {
     { calories: 0, proteinGrams: 0, carbsGrams: 0, fatGrams: 0 }
   );
 
-  // Generate 7-day historical trends array for Recharts
   const get7DayHistory = () => {
     const days: Array<{
       dateLabel: string;
