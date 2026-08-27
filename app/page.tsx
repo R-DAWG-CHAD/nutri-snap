@@ -164,7 +164,7 @@ export default function DashboardPage() {
         />
 
         {/* 7-Day Intake Trend Chart */}
-        <WeeklyChart data={get7DayHistory()} />
+        <WeeklyChart data={get7DayHistory()} goals={goals} />
       </main>
 
       {/* Modals */}

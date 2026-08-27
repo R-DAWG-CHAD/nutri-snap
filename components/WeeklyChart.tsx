@@ -12,8 +12,10 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  ReferenceLine,
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { DailyGoals } from '@/types/tracker';
 
 interface WeeklyChartProps {
   data: Array<{
@@ -25,23 +27,27 @@ interface WeeklyChartProps {
     fat: number;
     calorieGoal: number;
   }>;
+  goals: DailyGoals;
 }
 
-export function WeeklyChart({ data }: WeeklyChartProps) {
+export function WeeklyChart({ data, goals }: WeeklyChartProps) {
   const [viewMode, setViewMode] = useState<'calories' | 'macros'>('calories');
 
-  // Compute percentage breakdown for each day (handles going over 100% cleanly)
+  // Compute Goal Completion Percentage (%) for each macro relative to daily targets
   const processedData = data.map((d) => {
-    const totalMacroGrams = (d.protein || 0) + (d.carbs || 0) + (d.fat || 0);
+    const proteinGoal = goals.proteinGrams || 150;
+    const carbsGoal = goals.carbsGrams || 200;
+    const fatGoal = goals.fatGrams || 65;
 
-    // Percentage of total macro intake for the day
-    const proteinPct = totalMacroGrams > 0 ? Math.round((d.protein / totalMacroGrams) * 100) : 0;
-    const carbsPct = totalMacroGrams > 0 ? Math.round((d.carbs / totalMacroGrams) * 100) : 0;
-    const fatPct = totalMacroGrams > 0 ? Math.round((d.fat / totalMacroGrams) * 100) : 0;
+    const proteinPct = Math.round(((d.protein || 0) / proteinGoal) * 100);
+    const carbsPct = Math.round(((d.carbs || 0) / carbsGoal) * 100);
+    const fatPct = Math.round(((d.fat || 0) / fatGoal) * 100);
 
     return {
       ...d,
-      totalMacroGrams,
+      proteinGoal,
+      carbsGoal,
+      fatGoal,
       proteinPct,
       carbsPct,
       fatPct,
@@ -57,7 +63,9 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
           </div>
           <div className="min-w-0">
             <h3 className="text-sm sm:text-base font-bold text-slate-100 truncate">7-Day Trends</h3>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">Intake consistency</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+              {viewMode === 'calories' ? 'Calorie budget vs goal' : '% of Macro Target Achieved'}
+            </p>
           </div>
         </div>
 
@@ -81,7 +89,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Macros (%)
+            Macros (% Goal)
           </button>
         </div>
       </div>
@@ -142,7 +150,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 tickLine={false}
                 axisLine={false}
                 unit="%"
-                domain={[0, 'auto']}
+                domain={[0, (dataMax: number) => Math.max(100, Math.ceil(dataMax / 10) * 10)]}
               />
               <Tooltip
                 contentStyle={{
@@ -155,13 +163,13 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 labelStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
                 formatter={(value: any, name: any, item: any) => {
                   if (name.includes('Protein')) {
-                    return [`${value}% (${item.payload.protein}g)`, 'Protein'];
+                    return [`${value}% of goal (${item.payload.protein}g / ${item.payload.proteinGoal}g)`, 'Protein'];
                   }
                   if (name.includes('Carbs')) {
-                    return [`${value}% (${item.payload.carbs}g)`, 'Carbs'];
+                    return [`${value}% of goal (${item.payload.carbs}g / ${item.payload.carbsGoal}g)`, 'Carbs'];
                   }
                   if (name.includes('Fat')) {
-                    return [`${value}% (${item.payload.fat}g)`, 'Fat'];
+                    return [`${value}% of goal (${item.payload.fat}g / ${item.payload.fatGoal}g)`, 'Fat'];
                   }
                   return [value, name];
                 }}
@@ -170,9 +178,12 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 wrapperStyle={{ fontSize: '10px', paddingTop: '6px' }}
                 iconType="circle"
               />
-              <Bar dataKey="proteinPct" name="Protein (%)" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="carbsPct" name="Carbs (%)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="fatPct" name="Fat (%)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              {/* Dotted 100% Target Goal Line */}
+              <ReferenceLine y={100} stroke="#10b981" strokeDasharray="3 3" label={{ value: '100% Target', fill: '#10b981', fontSize: 9, position: 'top' }} />
+
+              <Bar dataKey="proteinPct" name="Protein (% Goal)" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="carbsPct" name="Carbs (% Goal)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="fatPct" name="Fat (% Goal)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
