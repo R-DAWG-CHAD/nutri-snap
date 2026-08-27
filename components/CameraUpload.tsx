@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Camera, Upload, Sparkles, Loader2, MessageSquare } from 'lucide-react';
+import { Camera, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 import { FoodAnalysisResponse } from '@/types/tracker';
 
 interface CameraUploadProps {
@@ -84,11 +84,11 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
 
           <div className="max-w-full px-2">
             <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center justify-center gap-1.5">
-              <span>Snap or Upload Food</span>
+              <span>Snap Meal Photo</span>
               <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse flex-shrink-0" />
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5 max-w-xs">
-              AI estimates portions, calories, and macros from photo
+              AI estimates calories and macros instantly from photo
             </p>
           </div>
 
@@ -106,24 +106,15 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
             />
           </div>
 
-          {/* Action buttons fitting container width */}
-          <div className="flex items-center justify-center gap-2.5 mt-1 w-full max-w-xs px-1">
+          {/* Single Centered Take Photo Button */}
+          <div className="mt-1 w-full max-w-xs px-1">
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
-              className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 min-w-0"
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
             >
               <Camera className="w-4 h-4 flex-shrink-0 stroke-[2.5]" />
-              <span className="truncate">Take Photo</span>
-            </button>
-
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isAnalyzing}
-              className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 min-w-0"
-            >
-              <Upload className="w-4 h-4 flex-shrink-0 text-slate-400" />
-              <span className="truncate">Choose File</span>
+              <span>Take Photo</span>
             </button>
           </div>
         </div>
@@ -149,7 +140,7 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
             </div>
 
             <p className="text-xs text-slate-400 truncate max-w-full">
-              {imageCaption ? `Factoring in: "${imageCaption}"` : 'Identifying ingredients, portion weights, and macro ratios'}
+              {imageCaption ? `Factoring in: "${imageCaption}"` : 'Identifying ingredients and macro ratios'}
             </p>
           </div>
         </div>

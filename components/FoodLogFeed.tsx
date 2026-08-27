@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Meal } from '@/types/tracker';
-import { Trash2, Edit2, Plus, Utensils, Clock, Flame, Scale } from 'lucide-react';
+import { Trash2, Edit2, Plus, Utensils, Clock, Flame } from 'lucide-react';
 
 interface FoodLogFeedProps {
   meals: Meal[];
@@ -72,11 +72,6 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
                   ) : (
                     <Utensils className="w-5 h-5 text-slate-500" />
                   )}
-                  {meal.mealType && (
-                    <span className="absolute top-0.5 left-0.5 px-1 py-0.2 text-[8px] font-bold uppercase bg-slate-950/80 text-emerald-400 rounded">
-                      {meal.mealType[0]}
-                    </span>
-                  )}
                 </div>
 
                 {/* Details */}
@@ -86,13 +81,9 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
                   </h4>
 
                   <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
-                    <span className="flex items-center gap-0.5 font-medium text-slate-300">
+                    <span className="flex items-center gap-0.5 font-semibold text-slate-200">
                       <Flame className="w-3 h-3 text-violet-400 flex-shrink-0" />
                       {meal.calories} kcal
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      <Scale className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                      {meal.estimatedWeightGrams}g
                     </span>
                     <span className="flex items-center gap-0.5 text-slate-500">
                       <Clock className="w-3 h-3 flex-shrink-0" />

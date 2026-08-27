@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Sparkles, Scale, Flame, Dumbbell, Wheat, Beef, MessageSquareText, Loader2 } from 'lucide-react';
+import { X, Check, Sparkles, Flame, Dumbbell, Wheat, Beef, MessageSquareText, Loader2 } from 'lucide-react';
 import { FoodAnalysisResponse, Meal } from '@/types/tracker';
 
 interface MealModalProps {
@@ -20,13 +20,11 @@ export function MealModal({
   isEditingExisting = false,
 }: MealModalProps) {
   const [mealName, setMealName] = useState('');
-  const [weight, setWeight] = useState<number | ''>(200);
   const [calories, setCalories] = useState<number | ''>(350);
   const [protein, setProtein] = useState<number | ''>(20);
   const [carbs, setCarbs] = useState<number | ''>(30);
   const [fat, setFat] = useState<number | ''>(12);
   const [confidence, setConfidence] = useState<number>(0.9);
-  const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
   // Natural Language Description State
@@ -37,14 +35,12 @@ export function MealModal({
   useEffect(() => {
     if (initialData) {
       setMealName(initialData.mealName || '');
-      setWeight(initialData.estimatedWeightGrams ?? 200);
       setCalories(initialData.calories ?? 0);
       setProtein(initialData.proteinGrams ?? 0);
       setCarbs(initialData.carbsGrams ?? 0);
       setFat(initialData.fatGrams ?? 0);
       setConfidence(initialData.confidenceScore ?? 0.9);
       setImageUrl(initialData.imageUrl);
-      setMealType(initialData.mealType || 'lunch');
       setTextDescription('');
     }
   }, [initialData]);
@@ -69,7 +65,6 @@ export function MealModal({
       }
 
       setMealName(data.mealName || textDescription);
-      setWeight(data.estimatedWeightGrams ?? 200);
       setCalories(data.calories ?? 0);
       setProtein(data.proteinGrams ?? 0);
       setCarbs(data.carbsGrams ?? 0);
@@ -87,13 +82,12 @@ export function MealModal({
     e.preventDefault();
     onSave({
       mealName: mealName || 'Custom Meal',
-      estimatedWeightGrams: weight === '' ? 0 : Number(weight),
+      estimatedWeightGrams: 0,
       calories: calories === '' ? 0 : Number(calories),
       proteinGrams: protein === '' ? 0 : Number(protein),
       carbsGrams: carbs === '' ? 0 : Number(carbs),
       fatGrams: fat === '' ? 0 : Number(fat),
       confidenceScore: confidence,
-      mealType,
       imageUrl,
     });
     onClose();
@@ -113,7 +107,7 @@ export function MealModal({
                 {isEditingExisting ? 'Edit Meal Entry' : 'Log Meal Entry'}
               </h2>
               <p className="text-[11px] text-slate-400">
-                Use AI text estimation or fine-tune exact nutrition numbers
+                Use AI text estimation or fine-tune nutrition numbers
               </p>
             </div>
           </div>
@@ -204,58 +198,19 @@ export function MealModal({
             />
           </div>
 
-          {/* Category Selector */}
+          {/* Calories Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Meal Type
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5 text-violet-400" />
+              <span>Calories (kcal)</span>
             </label>
-            <div className="grid grid-cols-4 gap-2">
-              {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((type) => (
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() => setMealType(type)}
-                  className={`py-2 rounded-xl text-xs font-semibold capitalize border transition-all ${
-                    mealType === type
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
-                      : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Weight & Calories */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                <Scale className="w-3.5 h-3.5 text-slate-400" />
-                <span>Portion (grams)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-violet-400" />
-                <span>Calories (kcal)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={calories}
-                onChange={(e) => setCalories(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-sm focus:outline-none focus:border-violet-500"
-              />
-            </div>
+            <input
+              type="number"
+              min="0"
+              value={calories}
+              onChange={(e) => setCalories(e.target.value === '' ? '' : Number(e.target.value))}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-base focus:outline-none focus:border-violet-500"
+            />
           </div>
 
           {/* Macros: Protein, Carbs, Fat */}
