@@ -30,6 +30,23 @@ interface WeeklyChartProps {
 export function WeeklyChart({ data }: WeeklyChartProps) {
   const [viewMode, setViewMode] = useState<'calories' | 'macros'>('calories');
 
+  // Compute percentage breakdown for each day
+  const processedData = data.map((d) => {
+    const totalMacroGrams = (d.protein || 0) + (d.carbs || 0) + (d.fat || 0);
+
+    const proteinPct = totalMacroGrams > 0 ? Math.round((d.protein / totalMacroGrams) * 100) : 0;
+    const carbsPct = totalMacroGrams > 0 ? Math.round((d.carbs / totalMacroGrams) * 100) : 0;
+    const fatPct = totalMacroGrams > 0 ? Math.round((d.fat / totalMacroGrams) * 100) : 0;
+
+    return {
+      ...d,
+      totalMacroGrams,
+      proteinPct,
+      carbsPct,
+      fatPct,
+    };
+  });
+
   return (
     <section className="w-full max-w-full overflow-hidden glass-panel rounded-3xl p-4 sm:p-5 border border-white/10 shadow-xl">
       <div className="flex flex-row items-center justify-between gap-2 mb-3">
@@ -63,7 +80,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Macros (g)
+            Macros (%)
           </button>
         </div>
       </div>
@@ -71,7 +88,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
       <div className="w-full h-56 sm:h-64 pt-2">
         <ResponsiveContainer width="100%" height="100%">
           {viewMode === 'calories' ? (
-            <ComposedChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <ComposedChart data={processedData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
               <defs>
                 <linearGradient id="calorieBarGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
@@ -109,7 +126,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
               />
             </ComposedChart>
           ) : (
-            <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <BarChart data={processedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} vertical={false} />
               <XAxis
                 dataKey="dateLabel"
@@ -118,7 +135,14 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis
+                stroke="#94a3b8"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                unit="%"
+                domain={[0, 100]}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'rgba(15, 23, 42, 0.95)',
@@ -128,14 +152,26 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                   fontSize: '11px',
                 }}
                 labelStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
+                formatter={(value: any, name: any, item: any) => {
+                  if (name.includes('Protein')) {
+                    return [`${value}% (${item.payload.protein}g)`, 'Protein'];
+                  }
+                  if (name.includes('Carbs')) {
+                    return [`${value}% (${item.payload.carbs}g)`, 'Carbs'];
+                  }
+                  if (name.includes('Fat')) {
+                    return [`${value}% (${item.payload.fat}g)`, 'Fat'];
+                  }
+                  return [value, name];
+                }}
               />
               <Legend
                 wrapperStyle={{ fontSize: '10px', paddingTop: '6px' }}
                 iconType="circle"
               />
-              <Bar dataKey="protein" name="Protein (g)" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="carbs" name="Carbs (g)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="fat" name="Fat (g)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="proteinPct" name="Protein (%)" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="carbsPct" name="Carbs (%)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="fatPct" name="Fat (%)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
