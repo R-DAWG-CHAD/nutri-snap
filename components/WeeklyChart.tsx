@@ -30,10 +30,11 @@ interface WeeklyChartProps {
 export function WeeklyChart({ data }: WeeklyChartProps) {
   const [viewMode, setViewMode] = useState<'calories' | 'macros'>('calories');
 
-  // Compute percentage breakdown for each day
+  // Compute percentage breakdown for each day (handles going over 100% cleanly)
   const processedData = data.map((d) => {
     const totalMacroGrams = (d.protein || 0) + (d.carbs || 0) + (d.fat || 0);
 
+    // Percentage of total macro intake for the day
     const proteinPct = totalMacroGrams > 0 ? Math.round((d.protein / totalMacroGrams) * 100) : 0;
     const carbsPct = totalMacroGrams > 0 ? Math.round((d.carbs / totalMacroGrams) * 100) : 0;
     const fatPct = totalMacroGrams > 0 ? Math.round((d.fat / totalMacroGrams) * 100) : 0;
@@ -141,7 +142,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 tickLine={false}
                 axisLine={false}
                 unit="%"
-                domain={[0, 100]}
+                domain={[0, 'auto']}
               />
               <Tooltip
                 contentStyle={{
