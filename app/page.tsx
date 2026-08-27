@@ -122,8 +122,6 @@ export default function DashboardPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         onOpenGoals={() => setIsGoalsOpen(true)}
-        onOpenAIPlan={() => setIsAIPlanOpen(true)}
-        onOpenWeighIn={() => setIsWeighInOpen(true)}
       />
 
       {/* Error Banner */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Settings, Flame, Dumbbell, Wheat, Beef } from 'lucide-react';
+import { X, Check, Settings, Flame, Dumbbell, Wheat, Beef, Sparkles } from 'lucide-react';
 import { DailyGoals } from '@/types/tracker';
 
 interface GoalsModalProps {
@@ -58,8 +58,8 @@ export function GoalsModal({
               <Settings className="w-4 h-4 text-violet-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">Daily Target Goals</h2>
-              <p className="text-[11px] text-slate-400">Customize your target nutrition budget</p>
+              <h2 className="text-base font-bold text-slate-100">Settings & Targets</h2>
+              <p className="text-[11px] text-slate-400">Customize target goals or calculate with AI</p>
             </div>
           </div>
 
@@ -71,13 +71,15 @@ export function GoalsModal({
           </button>
         </div>
 
+        {/* AI Macro Plan Banner */}
         {onOpenAIPlan && (
-          <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-cyan-500/15 border border-emerald-500/30 flex items-center justify-between">
+          <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-between shadow-md">
             <div>
-              <span className="text-xs font-bold text-slate-100 flex items-center gap-1">
-                <span>Unsure about your macros?</span>
+              <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>AI Macro Plan Calculator</span>
               </span>
-              <p className="text-[10px] text-slate-400">Let Gemini calculate BMR & optimal targets</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Let Gemini calculate BMR & optimal targets</p>
             </div>
             <button
               type="button"
@@ -85,7 +87,7 @@ export function GoalsModal({
                 onClose();
                 onOpenAIPlan();
               }}
-              className="px-3 py-1.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold shadow-md hover:bg-emerald-400 transition-all active:scale-95 flex items-center gap-1"
+              className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-1 flex-shrink-0"
             >
               <span>AI Wizard</span>
             </button>
