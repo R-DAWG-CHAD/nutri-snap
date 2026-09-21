@@ -1,12 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
+/**
+ * Robustly extracts and parses JSON from Gemini's output,
+ * handling markdown code blocks, preamble thoughts, or trailing notes.
+ */
+function extractJson(rawText: string): any {
+  if (!rawText) {
+    throw new Error('Gemini returned an empty response.');
+  }
+
+  // Remove markdown code fences if present
+  let cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // Find the outermost JSON object braces
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) {
+    throw new Error('Could not parse nutrition JSON from Gemini response.');
+  }
+
+  return JSON.parse(match[0]);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'GEMINI_API_KEY environment variable is not configured.' },
+        { error: 'GEMINI_API_KEY is missing. Please configure it in your Vercel project settings.' },
         { status: 500 }
       );
     }
@@ -41,9 +62,7 @@ Respond ONLY with a raw, valid JSON object matching this exact schema:
           config: { responseMimeType: 'application/json' },
         });
 
-        const responseText = response.text || '';
-        const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanedText);
+        const parsed = extractJson(response.text || '');
 
         return NextResponse.json({
           mealName: String(parsed.mealName || body.textDescription),
@@ -101,9 +120,7 @@ Respond ONLY with raw JSON schema:
           config: { responseMimeType: 'application/json' },
         });
 
-        const responseText = response.text || '';
-        const cleanedText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsedData = JSON.parse(cleanedText);
+        const parsedData = extractJson(response.text || '');
 
         return NextResponse.json({
           mealName: String(parsedData.mealName || 'Unidentified Dish'),
@@ -140,7 +157,7 @@ Respond ONLY with raw JSON schema:
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
           config: { responseMimeType: 'application/json' },
         });
-        const parsed = JSON.parse(response.text?.replace(/```json/gi, '').replace(/```/g, '').trim() || '{}');
+        const parsed = extractJson(response.text || '');
         return NextResponse.json({
           mealName: String(parsed.mealName || textDesc),
           estimatedWeightGrams: Math.round(Number(parsed.estimatedWeightGrams) || 250),
@@ -185,7 +202,7 @@ Respond ONLY with raw JSON schema:
           config: { responseMimeType: 'application/json' },
         });
 
-        const parsedData = JSON.parse(response.text?.replace(/```json/gi, '').replace(/```/g, '').trim() || '{}');
+        const parsedData = extractJson(response.text || '');
         return NextResponse.json({
           mealName: String(parsedData.mealName || 'Unidentified Dish'),
           estimatedWeightGrams: Math.round(Number(parsedData.estimatedWeightGrams) || 280),
@@ -201,8 +218,20 @@ Respond ONLY with raw JSON schema:
     return NextResponse.json({ error: 'Please provide an image or text description.' }, { status: 400 });
   } catch (error: any) {
     console.error('Gemini Food Analysis Error:', error);
+
+    const errorMessage = String(error?.message || error);
+    let userFacingDetail = 'Gemini AI encountered an error analyzing your meal.';
+
+    if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+      userFacingDetail = 'Gemini API rate limit reached. Please wait a moment and try again.';
+    } else if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
+      userFacingDetail = 'Image was flagged by safety filters. Please try another clear angle of the food.';
+    } else if (errorMessage.includes('JSON')) {
+      userFacingDetail = 'Could not parse nutritional data from AI response. Please try again.';
+    }
+
     return NextResponse.json(
-      { error: 'Failed to analyze meal with Gemini AI.', details: error?.message || String(error) },
+      { error: 'Failed to analyze meal with Gemini AI.', details: userFacingDetail },
       { status: 500 }
     );
   }

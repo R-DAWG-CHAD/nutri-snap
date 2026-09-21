@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 import { FoodAnalysisResponse } from '@/types/tracker';
+import { compressFileForUpload } from '@/utils/compressImage';
 
 interface CameraUploadProps {
   onAnalysisComplete: (result: FoodAnalysisResponse, imageUrl: string) => void;
@@ -26,18 +27,14 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
   const processImageFile = async (file: File) => {
     try {
       setIsAnalyzing(true);
-      
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(file);
-      const dataUrl = await base64Promise;
+
+      // Pre-compress photo on client (drops 10MB down to ~200KB)
+      // Eliminates Vercel 4.5MB payload limit errors and cellular connection timeouts
+      const { file: optimizedFile, dataUrl } = await compressFileForUpload(file, 1200, 1200, 0.8);
       setPreviewSrc(dataUrl);
 
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', optimizedFile);
       if (imageCaption.trim()) {
         formData.append('imageCaption', imageCaption.trim());
       }
@@ -50,7 +47,7 @@ export function CameraUpload({ onAnalysisComplete, onError }: CameraUploadProps)
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Failed to analyze food image.');
+        throw new Error(data.details || data.error || 'Failed to analyze food image.');
       }
 
       onAnalysisComplete(data as FoodAnalysisResponse, dataUrl);
