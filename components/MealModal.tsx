@@ -43,10 +43,10 @@ export function MealModal({
   isEditingExisting = false,
 }: MealModalProps) {
   const [mealName, setMealName] = useState('');
-  const [calories, setCalories] = useState<number | ''>(350);
-  const [protein, setProtein] = useState<number | ''>(20);
-  const [carbs, setCarbs] = useState<number | ''>(30);
-  const [fat, setFat] = useState<number | ''>(12);
+  const [calories, setCalories] = useState<number | ''>('');
+  const [protein, setProtein] = useState<number | ''>('');
+  const [carbs, setCarbs] = useState<number | ''>('');
+  const [fat, setFat] = useState<number | ''>('');
   const [confidence, setConfidence] = useState<number>(0.9);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
@@ -71,10 +71,10 @@ export function MealModal({
   useEffect(() => {
     if (initialData) {
       setMealName(initialData.mealName || '');
-      setCalories(initialData.calories ?? 0);
-      setProtein(initialData.proteinGrams ?? 0);
-      setCarbs(initialData.carbsGrams ?? 0);
-      setFat(initialData.fatGrams ?? 0);
+      setCalories(typeof initialData.calories === 'number' ? initialData.calories : '');
+      setProtein(typeof initialData.proteinGrams === 'number' ? initialData.proteinGrams : '');
+      setCarbs(typeof initialData.carbsGrams === 'number' ? initialData.carbsGrams : '');
+      setFat(typeof initialData.fatGrams === 'number' ? initialData.fatGrams : '');
       setConfidence(initialData.confidenceScore ?? 0.9);
       setImageUrl(initialData.imageUrl);
       setReasoning(initialData.reasoning);
@@ -547,6 +547,7 @@ export function MealModal({
             <input
               type="number"
               min="0"
+              placeholder="0"
               value={calories}
               onChange={(e) => setCalories(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full px-3.5 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-violet-300 font-bold text-base focus:outline-none focus:border-violet-500"
@@ -564,6 +565,7 @@ export function MealModal({
               <input
                 type="number"
                 min="0"
+                placeholder="0"
                 value={protein}
                 onChange={(e) => setProtein(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-emerald-400"
@@ -579,6 +581,7 @@ export function MealModal({
               <input
                 type="number"
                 min="0"
+                placeholder="0"
                 value={carbs}
                 onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-cyan-400"
@@ -594,6 +597,7 @@ export function MealModal({
               <input
                 type="number"
                 min="0"
+                placeholder="0"
                 value={fat}
                 onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-amber-400"

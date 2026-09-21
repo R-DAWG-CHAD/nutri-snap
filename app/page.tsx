@@ -66,10 +66,10 @@ export default function DashboardPage() {
     setPendingAnalysis({
       mealName: '',
       estimatedWeightGrams: 0,
-      calories: 350,
-      proteinGrams: 25,
-      carbsGrams: 35,
-      fatGrams: 12,
+      calories: undefined as any,
+      proteinGrams: undefined as any,
+      carbsGrams: undefined as any,
+      fatGrams: undefined as any,
       confidenceScore: 1.0,
       imageUrl: undefined,
     });
