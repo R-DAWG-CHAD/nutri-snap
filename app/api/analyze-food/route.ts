@@ -45,6 +45,8 @@ Analyze this meal description: "${body.textDescription}".
 CALORIE ACCURACY INSTRUCTION: Do NOT underestimate calories. Real food includes cooking oils, butter, seasonings, and realistic restaurant/home portion sizes. Account for hidden fats and density.
 
 Estimate realistic serving size in grams, total calories (kcal), and macronutrients in grams (protein, carbohydrates, fats).
+Provide a concise reasoning explanation detailing the main calorie contributors, and list key assumptions made. If anything is ambiguous, suggest a brief clarification question.
+
 Respond ONLY with a raw, valid JSON object matching this exact schema:
 {
   "mealName": "Specific clean title of the food item",
@@ -53,11 +55,14 @@ Respond ONLY with a raw, valid JSON object matching this exact schema:
   "proteinGrams": 32,
   "carbsGrams": 40,
   "fatGrams": 18,
-  "confidenceScore": 0.95
+  "confidenceScore": 0.95,
+  "reasoning": "Breakdown of ingredients, portion size, and calorie drivers.",
+  "assumptions": ["Assumed 1 tbsp butter/oil", "Assumed restaurant-style portion"],
+  "clarificationQuestion": "Optional question if something was unclear"
 }`;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.8-flash',
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
           config: { responseMimeType: 'application/json' },
         });
@@ -72,6 +77,9 @@ Respond ONLY with a raw, valid JSON object matching this exact schema:
           carbsGrams: Math.round(Number(parsed.carbsGrams) || 35),
           fatGrams: Math.round(Number(parsed.fatGrams) || 16),
           confidenceScore: Math.min(1, Math.max(0, Number(parsed.confidenceScore) || 0.9)),
+          reasoning: parsed.reasoning ? String(parsed.reasoning) : undefined,
+          assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(String) : [],
+          clarificationQuestion: parsed.clarificationQuestion ? String(parsed.clarificationQuestion) : undefined,
         });
       }
 
@@ -94,6 +102,8 @@ CRITICAL ACCURACY INSTRUCTION:
 - Do NOT underestimate calories. Real meals contain cooking oils, butter, dressings, and hidden fats.
 - Calculate realistic total calories = (protein * 4) + (carbs * 4) + (fat * 9).
 - Estimate realistic total weight in grams and macronutrient breakdown in grams.
+- Provide a concise reasoning explanation detailing the main calorie contributors, and list key assumptions made.
+- If bowl depth, preparation, or hidden ingredients are ambiguous, provide a brief clarification question (e.g. asking if oil was used or for a side-angle photo).
 
 Respond ONLY with raw JSON schema:
 {
@@ -103,11 +113,14 @@ Respond ONLY with raw JSON schema:
   "proteinGrams": 35,
   "carbsGrams": 45,
   "fatGrams": 20,
-  "confidenceScore": 0.92
+  "confidenceScore": 0.92,
+  "reasoning": "Breakdown of detected items (e.g. ~150g chicken, ~1 cup rice, visible cooking oil sheen).",
+  "assumptions": ["Assumed 1 tbsp cooking oil", "Assumed standard restaurant prep"],
+  "clarificationQuestion": "Optional follow-up question if portion or prep is uncertain"
 }`;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.8-flash',
           contents: [
             {
               role: 'user',
@@ -130,6 +143,9 @@ Respond ONLY with raw JSON schema:
           carbsGrams: Math.round(Number(parsedData.carbsGrams) || 40),
           fatGrams: Math.round(Number(parsedData.fatGrams) || 18),
           confidenceScore: Math.min(1, Math.max(0, Number(parsedData.confidenceScore) || 0.85)),
+          reasoning: parsedData.reasoning ? String(parsedData.reasoning) : undefined,
+          assumptions: Array.isArray(parsedData.assumptions) ? parsedData.assumptions.map(String) : [],
+          clarificationQuestion: parsedData.clarificationQuestion ? String(parsedData.clarificationQuestion) : undefined,
         });
       }
     }
@@ -150,10 +166,13 @@ Respond ONLY with raw JSON schema:
   "proteinGrams": 30,
   "carbsGrams": 40,
   "fatGrams": 18,
-  "confidenceScore": 0.95
+  "confidenceScore": 0.95,
+  "reasoning": "Breakdown of ingredients, portion size, and calorie drivers.",
+  "assumptions": ["Assumed 1 tbsp cooking oil"],
+  "clarificationQuestion": "Optional question if something was unclear"
 }`;
         const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.8-flash',
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
           config: { responseMimeType: 'application/json' },
         });
@@ -166,6 +185,9 @@ Respond ONLY with raw JSON schema:
           carbsGrams: Math.round(Number(parsed.carbsGrams) || 35),
           fatGrams: Math.round(Number(parsed.fatGrams) || 16),
           confidenceScore: Math.min(1, Math.max(0, Number(parsed.confidenceScore) || 0.9)),
+          reasoning: parsed.reasoning ? String(parsed.reasoning) : undefined,
+          assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(String) : [],
+          clarificationQuestion: parsed.clarificationQuestion ? String(parsed.clarificationQuestion) : undefined,
         });
       }
 
@@ -175,8 +197,16 @@ Respond ONLY with raw JSON schema:
         const base64Image = Buffer.from(arrayBuffer).toString('base64');
         const captionContext = imageCaption ? `User note about this dish: "${imageCaption}".` : '';
 
-        const visionPrompt = `Analyze food image. ${captionContext}
-CRITICAL: Do NOT underestimate calories. Account for oils, butter, sauces, and realistic portion weight.
+        const visionPrompt = `You are an expert nutritional analyst AI.
+Analyze the provided food/dish image with high precision. ${captionContext}
+
+CRITICAL ACCURACY INSTRUCTION:
+- Do NOT underestimate calories. Real meals contain cooking oils, butter, dressings, and hidden fats.
+- Calculate realistic total calories = (protein * 4) + (carbs * 4) + (fat * 9).
+- Estimate realistic total weight in grams and macronutrient breakdown in grams.
+- Provide a concise reasoning explanation detailing the main calorie contributors, and list key assumptions made.
+- If bowl depth, preparation, or hidden ingredients are ambiguous, provide a brief clarification question.
+
 Respond ONLY with raw JSON schema:
 {
   "mealName": "Specific name",
@@ -185,11 +215,14 @@ Respond ONLY with raw JSON schema:
   "proteinGrams": 32,
   "carbsGrams": 45,
   "fatGrams": 20,
-  "confidenceScore": 0.92
+  "confidenceScore": 0.92,
+  "reasoning": "Breakdown of detected items (e.g. ~150g chicken, ~1 cup rice, visible cooking oil sheen).",
+  "assumptions": ["Assumed 1 tbsp cooking oil", "Assumed standard restaurant prep"],
+  "clarificationQuestion": "Optional follow-up question if portion or prep is uncertain"
 }`;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.8-flash',
           contents: [
             {
               role: 'user',
@@ -211,6 +244,9 @@ Respond ONLY with raw JSON schema:
           carbsGrams: Math.round(Number(parsedData.carbsGrams) || 40),
           fatGrams: Math.round(Number(parsedData.fatGrams) || 18),
           confidenceScore: Math.min(1, Math.max(0, Number(parsedData.confidenceScore) || 0.85)),
+          reasoning: parsedData.reasoning ? String(parsedData.reasoning) : undefined,
+          assumptions: Array.isArray(parsedData.assumptions) ? parsedData.assumptions.map(String) : [],
+          clarificationQuestion: parsedData.clarificationQuestion ? String(parsedData.clarificationQuestion) : undefined,
         });
       }
     }

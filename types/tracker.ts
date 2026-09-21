@@ -11,6 +11,9 @@ export interface Meal {
   imageUrl?: string; // base64 or photo URL
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   notes?: string;
+  reasoning?: string;
+  assumptions?: string[];
+  chatHistory?: ChatMessage[];
 }
 
 export interface DailyGoals {
@@ -29,6 +32,23 @@ export interface FoodAnalysisResponse {
   fatGrams: number;
   confidenceScore: number;
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  reasoning?: string;
+  assumptions?: string[];
+  clarificationQuestion?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  imageUrl?: string;
+  updatedMacros?: {
+    calories: number;
+    proteinGrams: number;
+    carbsGrams: number;
+    fatGrams: number;
+  };
+  timestamp: string;
 }
 
 export interface WeighIn {

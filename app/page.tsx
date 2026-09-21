@@ -42,7 +42,11 @@ export default function DashboardPage() {
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [pendingAnalysis, setPendingAnalysis] = useState<
-    (FoodAnalysisResponse & { imageUrl?: string; mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack' }) | null
+    (FoodAnalysisResponse & {
+      imageUrl?: string;
+      mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+      chatHistory?: any[];
+    }) | null
   >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -61,7 +65,7 @@ export default function DashboardPage() {
     setEditingMeal(null);
     setPendingAnalysis({
       mealName: '',
-      estimatedWeightGrams: 200,
+      estimatedWeightGrams: 0,
       calories: 350,
       proteinGrams: 25,
       carbsGrams: 35,
@@ -85,6 +89,9 @@ export default function DashboardPage() {
       confidenceScore: meal.confidenceScore,
       imageUrl: meal.imageUrl,
       mealType: meal.mealType,
+      reasoning: meal.reasoning,
+      assumptions: meal.assumptions,
+      chatHistory: meal.chatHistory,
     });
     setIsMealModalOpen(true);
   };
