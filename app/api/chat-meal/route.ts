@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
+const CANDIDATE_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash',
+];
+
+async function generateWithFallback(ai: GoogleGenAI, payload: any) {
+  let lastError: any;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        ...payload,
+        model,
+      });
+      return { response, modelUsed: model };
+    } catch (err: any) {
+      console.warn(`[Chat Fallback] Model ${model} failed (${err.status || err.message}). Attempting next model...`);
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
 function extractJson(rawText: string): any {
   if (!rawText) {
     throw new Error('Gemini returned an empty response.');
@@ -106,8 +130,7 @@ INSTRUCTIONS:
     }
     contents.push({ role: 'user', parts: latestUserParts });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const { response, modelUsed } = await generateWithFallback(ai, {
       contents,
       config: { responseMimeType: 'application/json' },
     });
@@ -123,6 +146,7 @@ INSTRUCTIONS:
         carbsGrams: Math.round(Number(parsed.updatedMacros?.carbsGrams) || currentMeal?.carbsGrams || 0),
         fatGrams: Math.round(Number(parsed.updatedMacros?.fatGrams) || currentMeal?.fatGrams || 0),
       },
+      modelUsed,
     });
   } catch (error: any) {
     console.error('Chat Meal Error:', error);

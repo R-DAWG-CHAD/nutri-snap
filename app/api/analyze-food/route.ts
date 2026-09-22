@@ -2,6 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
 /**
+ * Prioritized list of Gemini flash models.
+ * If Google's servers experience temporary 503 high-demand or rate limits
+ * on one model version, the request automatically falls back to the next.
+ */
+const CANDIDATE_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash',
+];
+
+async function generateWithFallback(ai: GoogleGenAI, payload: any) {
+  let lastError: any;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        ...payload,
+        model,
+      });
+      return { response, modelUsed: model };
+    } catch (err: any) {
+      console.warn(`[Gemini Fallback] Model ${model} failed (${err.status || err.message}). Attempting next model...`);
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Robustly extracts and parses JSON from Gemini's output,
  * handling markdown code blocks, preamble thoughts, or trailing notes.
  */
@@ -61,8 +90,7 @@ Respond ONLY with a raw, valid JSON object matching this exact schema:
   "clarificationQuestion": "Optional question if something was unclear"
 }`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
+        const { response, modelUsed } = await generateWithFallback(ai, {
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
           config: { responseMimeType: 'application/json' },
         });
@@ -80,6 +108,7 @@ Respond ONLY with a raw, valid JSON object matching this exact schema:
           reasoning: parsed.reasoning ? String(parsed.reasoning) : undefined,
           assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(String) : [],
           clarificationQuestion: parsed.clarificationQuestion ? String(parsed.clarificationQuestion) : undefined,
+          modelUsed,
         });
       }
 
@@ -103,7 +132,7 @@ CRITICAL ACCURACY INSTRUCTION:
 - Calculate realistic total calories = (protein * 4) + (carbs * 4) + (fat * 9).
 - Estimate realistic total weight in grams and macronutrient breakdown in grams.
 - Provide a concise reasoning explanation detailing the main calorie contributors, and list key assumptions made.
-- If bowl depth, preparation, or hidden ingredients are ambiguous, provide a brief clarification question (e.g. asking if oil was used or for a side-angle photo).
+- If bowl depth, preparation, or hidden ingredients are ambiguous, provide a brief clarification question.
 
 Respond ONLY with raw JSON schema:
 {
@@ -119,8 +148,7 @@ Respond ONLY with raw JSON schema:
   "clarificationQuestion": "Optional follow-up question if portion or prep is uncertain"
 }`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
+        const { response, modelUsed } = await generateWithFallback(ai, {
           contents: [
             {
               role: 'user',
@@ -146,6 +174,7 @@ Respond ONLY with raw JSON schema:
           reasoning: parsedData.reasoning ? String(parsedData.reasoning) : undefined,
           assumptions: Array.isArray(parsedData.assumptions) ? parsedData.assumptions.map(String) : [],
           clarificationQuestion: parsedData.clarificationQuestion ? String(parsedData.clarificationQuestion) : undefined,
+          modelUsed,
         });
       }
     }
@@ -171,8 +200,7 @@ Respond ONLY with raw JSON schema:
   "assumptions": ["Assumed 1 tbsp cooking oil"],
   "clarificationQuestion": "Optional question if something was unclear"
 }`;
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
+        const { response, modelUsed } = await generateWithFallback(ai, {
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
           config: { responseMimeType: 'application/json' },
         });
@@ -188,6 +216,7 @@ Respond ONLY with raw JSON schema:
           reasoning: parsed.reasoning ? String(parsed.reasoning) : undefined,
           assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(String) : [],
           clarificationQuestion: parsed.clarificationQuestion ? String(parsed.clarificationQuestion) : undefined,
+          modelUsed,
         });
       }
 
@@ -221,8 +250,7 @@ Respond ONLY with raw JSON schema:
   "clarificationQuestion": "Optional follow-up question if portion or prep is uncertain"
 }`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
+        const { response, modelUsed } = await generateWithFallback(ai, {
           contents: [
             {
               role: 'user',
@@ -247,6 +275,7 @@ Respond ONLY with raw JSON schema:
           reasoning: parsedData.reasoning ? String(parsedData.reasoning) : undefined,
           assumptions: Array.isArray(parsedData.assumptions) ? parsedData.assumptions.map(String) : [],
           clarificationQuestion: parsedData.clarificationQuestion ? String(parsedData.clarificationQuestion) : undefined,
+          modelUsed,
         });
       }
     }
@@ -258,7 +287,9 @@ Respond ONLY with raw JSON schema:
     const errorMessage = String(error?.message || error);
     let userFacingDetail = 'Gemini AI encountered an error analyzing your meal.';
 
-    if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+    if (errorMessage.includes('503') || errorMessage.includes('UNAVAILABLE')) {
+      userFacingDetail = 'Google AI servers are currently under temporary high demand. Please try again in a few moments.';
+    } else if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
       userFacingDetail = 'Gemini API rate limit reached. Please wait a moment and try again.';
     } else if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
       userFacingDetail = 'Image was flagged by safety filters. Please try another clear angle of the food.';
