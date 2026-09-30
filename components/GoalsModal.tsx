@@ -27,12 +27,14 @@ export function GoalsModal({
   const [protein, setProtein] = useState<number | ''>(goals.proteinGrams);
   const [carbs, setCarbs] = useState<number | ''>(goals.carbsGrams);
   const [fat, setFat] = useState<number | ''>(goals.fatGrams);
+  const [trackCarbsAndFats, setTrackCarbsAndFats] = useState<boolean>(goals.trackCarbsAndFats !== false);
 
   useEffect(() => {
     setCalories(goals.calories);
     setProtein(goals.proteinGrams);
     setCarbs(goals.carbsGrams);
     setFat(goals.fatGrams);
+    setTrackCarbsAndFats(goals.trackCarbsAndFats !== false);
   }, [goals]);
 
   if (!isOpen) return null;
@@ -44,12 +46,13 @@ export function GoalsModal({
       proteinGrams: protein === '' ? 150 : Number(protein),
       carbsGrams: carbs === '' ? 200 : Number(carbs),
       fatGrams: fat === '' ? 65 : Number(fat),
+      trackCarbsAndFats,
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
       <div className="w-full max-w-sm glass-modal rounded-3xl border border-white/10 p-6 shadow-2xl relative my-auto animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
@@ -94,7 +97,33 @@ export function GoalsModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="mt-3.5 flex flex-col gap-3.5">
+          {/* Track Carbs & Fats Toggle Switch */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 shadow-sm">
+            <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+              <span className="text-xs font-bold text-slate-200">Track Carbs & Fats</span>
+              <span className="text-[11px] text-slate-400">
+                {trackCarbsAndFats ? 'Full macro tracking active' : 'Tracking Calories & Protein only'}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={trackCarbsAndFats}
+              onClick={() => setTrackCarbsAndFats(!trackCarbsAndFats)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                trackCarbsAndFats ? 'bg-emerald-500' : 'bg-slate-700'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  trackCarbsAndFats ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Calorie Goal */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
@@ -127,37 +156,42 @@ export function GoalsModal({
             />
           </div>
 
-          {/* Carbs Goal */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-              <Wheat className="w-4 h-4 text-cyan-400" />
-              <span>Carbohydrates Goal (grams)</span>
-            </label>
-            <input
-              type="number"
-              min="10"
-              max="1000"
-              value={carbs}
-              onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-cyan-300 font-bold text-base focus:outline-none focus:border-cyan-500"
-            />
-          </div>
+          {/* Carbs & Fat Goals (Only shown when trackCarbsAndFats is true) */}
+          {trackCarbsAndFats && (
+            <>
+              {/* Carbs Goal */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Wheat className="w-4 h-4 text-cyan-400" />
+                  <span>Carbohydrates Goal (grams)</span>
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value={carbs}
+                  onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-cyan-300 font-bold text-base focus:outline-none focus:border-cyan-500"
+                />
+              </div>
 
-          {/* Fat Goal */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-              <Beef className="w-4 h-4 text-amber-400" />
-              <span>Fats Goal (grams)</span>
-            </label>
-            <input
-              type="number"
-              min="5"
-              max="500"
-              value={fat}
-              onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-amber-300 font-bold text-base focus:outline-none focus:border-amber-500"
-            />
-          </div>
+              {/* Fat Goal */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Beef className="w-4 h-4 text-amber-400" />
+                  <span>Fats Goal (grams)</span>
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="500"
+                  value={fat}
+                  onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-amber-300 font-bold text-base focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </>
+          )}
 
           {/* Backup & Restore Data section */}
           {(onExport || onImport) && (

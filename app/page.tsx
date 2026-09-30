@@ -166,6 +166,7 @@ export default function DashboardPage() {
           onEdit={handleEditClick}
           onDelete={deleteMeal}
           onAddManual={handleAddManualClick}
+          trackCarbsAndFats={goals.trackCarbsAndFats !== false}
         />
 
         {/* 7-Day Intake Trend Chart */}
@@ -183,6 +184,7 @@ export default function DashboardPage() {
         onSave={handleSaveMeal}
         initialData={pendingAnalysis || undefined}
         isEditingExisting={!!editingMeal}
+        trackCarbsAndFats={goals.trackCarbsAndFats !== false}
       />
 
       <GoalsModal

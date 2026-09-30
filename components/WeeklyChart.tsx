@@ -32,6 +32,7 @@ interface WeeklyChartProps {
 
 export function WeeklyChart({ data, goals }: WeeklyChartProps) {
   const [viewMode, setViewMode] = useState<'calories' | 'macros'>('calories');
+  const trackCarbsAndFats = goals.trackCarbsAndFats !== false;
 
   // Compute Goal Completion Percentage (%) for each macro relative to daily targets
   const processedData = data.map((d) => {
@@ -64,7 +65,11 @@ export function WeeklyChart({ data, goals }: WeeklyChartProps) {
           <div className="min-w-0">
             <h3 className="text-sm sm:text-base font-bold text-slate-100 truncate">7-Day Trends</h3>
             <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
-              {viewMode === 'calories' ? 'Calorie budget vs goal' : '% of Macro Target Achieved'}
+              {viewMode === 'calories'
+                ? 'Calorie budget vs goal'
+                : trackCarbsAndFats
+                ? '% of Macro Target Achieved'
+                : '% of Protein Target Achieved'}
             </p>
           </div>
         </div>
@@ -89,7 +94,7 @@ export function WeeklyChart({ data, goals }: WeeklyChartProps) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Macros (% Goal)
+            {trackCarbsAndFats ? 'Macros (% Goal)' : 'Protein (% Goal)'}
           </button>
         </div>
       </div>
@@ -182,8 +187,12 @@ export function WeeklyChart({ data, goals }: WeeklyChartProps) {
               <ReferenceLine y={100} stroke="#10b981" strokeDasharray="3 3" label={{ value: '100% Target', fill: '#10b981', fontSize: 9, position: 'top' }} />
 
               <Bar dataKey="proteinPct" name="Protein (% Goal)" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="carbsPct" name="Carbs (% Goal)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="fatPct" name="Fat (% Goal)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              {trackCarbsAndFats && (
+                <>
+                  <Bar dataKey="carbsPct" name="Carbs (% Goal)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="fatPct" name="Fat (% Goal)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </>
+              )}
             </BarChart>
           )}
         </ResponsiveContainer>

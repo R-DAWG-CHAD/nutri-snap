@@ -9,9 +9,16 @@ interface FoodLogFeedProps {
   onEdit: (meal: Meal) => void;
   onDelete: (id: string) => void;
   onAddManual: () => void;
+  trackCarbsAndFats?: boolean;
 }
 
-export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFeedProps) {
+export function FoodLogFeed({
+  meals,
+  onEdit,
+  onDelete,
+  onAddManual,
+  trackCarbsAndFats = true,
+}: FoodLogFeedProps) {
   const formatTime = (isoString: string) => {
     try {
       const date = new Date(isoString);
@@ -96,12 +103,16 @@ export function FoodLogFeed({ meals, onEdit, onDelete, onAddManual }: FoodLogFee
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
                       P: {meal.proteinGrams}g
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/20">
-                      C: {meal.carbsGrams}g
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
-                      F: {meal.fatGrams}g
-                    </span>
+                    {trackCarbsAndFats && (
+                      <>
+                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/20">
+                          C: {meal.carbsGrams}g
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
+                          F: {meal.fatGrams}g
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -18,6 +18,7 @@ const DEFAULT_GOALS: DailyGoals = {
   proteinGrams: 150,
   carbsGrams: 200,
   fatGrams: 65,
+  trackCarbsAndFats: true,
 };
 
 const SAMPLE_WEIGH_INS: WeighIn[] = [

@@ -22,7 +22,9 @@ export function DailyProgress({ summary, goals }: DailyProgressProps) {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (calPercent / 100) * circumference;
 
-  const macros = [
+  const trackCarbsAndFats = goals.trackCarbsAndFats !== false;
+
+  const allMacros = [
     {
       name: 'Protein',
       current: summary.proteinGrams,
@@ -57,6 +59,10 @@ export function DailyProgress({ summary, goals }: DailyProgressProps) {
       icon: Beef,
     },
   ];
+
+  const macros = trackCarbsAndFats
+    ? allMacros
+    : allMacros.filter((m) => m.name === 'Protein');
 
   return (
     <section className="w-full max-w-full overflow-hidden glass-panel rounded-3xl p-4 sm:p-5 border border-white/10 shadow-2xl relative">

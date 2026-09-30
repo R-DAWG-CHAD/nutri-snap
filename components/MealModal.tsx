@@ -33,6 +33,7 @@ interface MealModalProps {
     }
   >;
   isEditingExisting?: boolean;
+  trackCarbsAndFats?: boolean;
 }
 
 export function MealModal({
@@ -41,6 +42,7 @@ export function MealModal({
   onSave,
   initialData,
   isEditingExisting = false,
+  trackCarbsAndFats = true,
 }: MealModalProps) {
   const [mealName, setMealName] = useState('');
   const [calories, setCalories] = useState<number | ''>('');
@@ -269,8 +271,8 @@ export function MealModal({
       estimatedWeightGrams: 0,
       calories: calories === '' ? 0 : Number(calories),
       proteinGrams: protein === '' ? 0 : Number(protein),
-      carbsGrams: carbs === '' ? 0 : Number(carbs),
-      fatGrams: fat === '' ? 0 : Number(fat),
+      carbsGrams: carbs === '' ? (initialData?.carbsGrams ?? 0) : Number(carbs),
+      fatGrams: fat === '' ? (initialData?.fatGrams ?? 0) : Number(fat),
       confidenceScore: confidence,
       imageUrl,
       reasoning,
@@ -554,13 +556,65 @@ export function MealModal({
             />
           </div>
 
-          {/* Macros: Protein, Carbs, Fat */}
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* Protein */}
-            <div className="p-2 rounded-xl bg-slate-900/90 border border-emerald-500/30">
-              <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center gap-1">
-                <Dumbbell className="w-3 h-3" />
-                <span>Protein (g)</span>
+          {/* Macros: Protein (and Carbs/Fat if tracked) */}
+          {trackCarbsAndFats ? (
+            <div className="grid grid-cols-3 gap-2.5">
+              {/* Protein */}
+              <div className="p-2 rounded-xl bg-slate-900/90 border border-emerald-500/30">
+                <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center gap-1">
+                  <Dumbbell className="w-3 h-3" />
+                  <span>Protein (g)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={protein}
+                  onChange={(e) => setProtein(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              {/* Carbs */}
+              <div className="p-2 rounded-xl bg-slate-900/90 border border-cyan-500/30">
+                <label className="block text-[11px] font-bold text-cyan-400 mb-1 flex items-center gap-1">
+                  <Wheat className="w-3 h-3" />
+                  <span>Carbs (g)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={carbs}
+                  onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              {/* Fat */}
+              <div className="p-2 rounded-xl bg-slate-900/90 border border-amber-500/30">
+                <label className="block text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1">
+                  <Beef className="w-3 h-3" />
+                  <span>Fat (g)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={fat}
+                  onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30">
+              <label className="block text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Dumbbell className="w-3.5 h-3.5" />
+                  <span>Protein (grams)</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">Carbs & Fats hidden</span>
               </label>
               <input
                 type="number"
@@ -568,42 +622,10 @@ export function MealModal({
                 placeholder="0"
                 value={protein}
                 onChange={(e) => setProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-1.5 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm focus:outline-none focus:border-emerald-400"
               />
             </div>
-
-            {/* Carbs */}
-            <div className="p-2 rounded-xl bg-slate-900/90 border border-cyan-500/30">
-              <label className="block text-[11px] font-bold text-cyan-400 mb-1 flex items-center gap-1">
-                <Wheat className="w-3 h-3" />
-                <span>Carbs (g)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={carbs}
-                onChange={(e) => setCarbs(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-cyan-400"
-              />
-            </div>
-
-            {/* Fat */}
-            <div className="p-2 rounded-xl bg-slate-900/90 border border-amber-500/30">
-              <label className="block text-[11px] font-bold text-amber-400 mb-1 flex items-center gap-1">
-                <Beef className="w-3 h-3" />
-                <span>Fat (g)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={fat}
-                onChange={(e) => setFat(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-2 py-1 bg-slate-950 border border-white/10 rounded-lg text-white font-bold text-sm text-center focus:outline-none focus:border-amber-400"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 pt-2">

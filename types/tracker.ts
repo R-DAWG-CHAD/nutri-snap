@@ -21,6 +21,7 @@ export interface DailyGoals {
   proteinGrams: number;
   carbsGrams: number;
   fatGrams: number;
+  trackCarbsAndFats?: boolean; // Defaults to true. If false, tracks calories & protein only.
 }
 
 export interface FoodAnalysisResponse {
